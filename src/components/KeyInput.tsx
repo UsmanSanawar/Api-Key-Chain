@@ -20,6 +20,8 @@ export function KeyInput() {
   const [showKey, setShowKey] = useState(false);
   const [autoDetect, setAutoDetect] = useState(true);
   const [providerSearch, setProviderSearch] = useState('');
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [bulkKeys, setBulkKeys] = useState('');
 
   useEffect(() => {
     if (autoDetect && detectedProvider) {
@@ -31,7 +33,67 @@ export function KeyInput() {
     }
   }, [detectedProvider, autoDetect]);
 
+  // Parse bulk keys: support both newline and comma separated
+  const parseBulkKeys = (input: string): string[] => {
+    return input
+      .split(/[\n,]/)
+      .map(key => key.trim())
+      .filter(key => key.length > 0);
+  };
+
+  const handleBulkTest = async () => {
+    let provider = selectedProvider;
+    
+    if (!provider || !bulkKeys.trim()) {
+      setTestResult({
+        success: false,
+        message: 'Please provide at least one API key and select a provider',
+      });
+      return;
+    }
+
+    const keys = parseBulkKeys(bulkKeys);
+    if (keys.length === 0) {
+      setTestResult({
+        success: false,
+        message: 'Please provide at least one valid API key',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Test each key with 1 second delay
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        // Trigger tests through the same flow as single test
+        await test(provider, key);
+        
+        // Add 1 second delay between tests (but not after the last one)
+        if (i < keys.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      setTestResult({
+        success: true,
+        message: `Successfully tested ${keys.length} API key${keys.length > 1 ? 's' : ''}. Results shown in history.`,
+      });
+    } catch (error) {
+      setTestResult({
+        success: false,
+        message: `Error during bulk testing: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleTest = async () => {
+    if (isBulkMode) {
+      await handleBulkTest();
+      return;
+    }
+
     let provider = selectedProvider;
     
     if (!provider || !apiKey) {
@@ -55,25 +117,57 @@ export function KeyInput() {
     <div className="w-full max-w-2xl mx-auto space-y-4 text-center">
       {/* API Key Input Section */}
       <div className="space-y-2 p-4 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-700 rounded-xl shadow-2xl backdrop-blur-sm">
-        <label className="block text-xs font-bold text-gray-200 uppercase tracking-widest">
-          API Key
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="block text-xs font-bold text-gray-200 uppercase tracking-widest">
+            API Key
+          </label>
+
+          {/* Single/Bulk Toggle */}
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-xs text-gray-400">Single</span>
+            <button
+              onClick={() => setIsBulkMode(!isBulkMode)}
+              className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                isBulkMode ? 'bg-blue-600' : 'bg-gray-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  isBulkMode ? 'translate-x-5' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+            <span className="text-xs text-gray-400">Bulk</span>
+          </div>
+        </div>
+
         <div className="flex gap-2 justify-center">
           <div className="flex-1 relative">
-            <input
-              type={showKey ? 'text' : 'password'}
-              value={apiKey}
-              onChange={(e) => handleKeyChange(e.target.value)}
-              placeholder="Paste your API key..."
-              className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition font-mono text-xs"
-            />
-            <button
-              onClick={() => setShowKey(!showKey)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition text-base bg-slate-800 px-1.5 py-0.5 rounded"
-              title={showKey ? 'Hide key' : 'Show key'}
-            >
-              {showKey ? '👁️' : '👁️‍🗨️'}
-            </button>
+            {isBulkMode ? (
+              <textarea
+                value={bulkKeys}
+                onChange={(e) => setBulkKeys(e.target.value)}
+                placeholder="Insert/paste API keys each in new line OR separated by comma"
+                className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition font-mono text-xs min-h-[100px] resize-none"
+              />
+            ) : (
+              <>
+                <input
+                  type={showKey ? 'text' : 'password'}
+                  value={apiKey}
+                  onChange={(e) => handleKeyChange(e.target.value)}
+                  placeholder="Paste your API key..."
+                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition font-mono text-xs"
+                />
+                <button
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition text-base bg-slate-800 px-1.5 py-0.5 rounded"
+                  title={showKey ? 'Hide key' : 'Show key'}
+                >
+                  {showKey ? '👁️' : '👁️‍🗨️'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -167,7 +261,7 @@ export function KeyInput() {
       <div className="flex gap-2">
         <button
           onClick={handleTest}
-          disabled={isLoading || !apiKey || !selectedProvider}
+          disabled={isLoading || (!isBulkMode && !apiKey) || (isBulkMode && !bulkKeys.trim()) || !selectedProvider}
           className="flex-1 py-3 px-5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition text-sm shadow-xl transform hover:scale-105 active:scale-95 disabled:hover:scale-100 border border-blue-400 disabled:border-slate-500"
         >
           {isLoading ? (
@@ -175,12 +269,13 @@ export function KeyInput() {
               <span className="animate-spin">⚙️</span> Testing...
             </span>
           ) : (
-            <span>⚡ Test</span>
+            <span>⚡ {isBulkMode ? 'Test All' : 'Test'}</span>
           )}
         </button>
         <button
           onClick={() => {
             reset();
+            setBulkKeys('');
             setTestResult(null);
             setShowKey(false);
           }}
@@ -196,6 +291,7 @@ export function KeyInput() {
           <span className="font-bold flex items-center gap-1">💡 Tip:</span>
           <span className="text-indigo-200">Paste key with Ctrl+V</span>
           <span className="text-indigo-200">• 👁️ to show/hide</span>
+          {isBulkMode && <span className="text-indigo-200">• 1s delay between tests</span>}
         </div>
       </div>
 
