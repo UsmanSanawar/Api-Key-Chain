@@ -1,0 +1,58 @@
+# Dev tools
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+.tsc-cache/
+
+# Development
+.env
+.env.local
+.env.*.local
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Documentation
+docs/
+examples/
+
+# Config files
+.editorconfig
+.eslintignore
+eslint.config.js
+tsconfig.*.json
+tailwind.config.js
+vite.config.ts
+vercel.json
+postcss.config.js
+
+# Test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+test/
+tests/
+__tests__/
+
+# Other
+src/
+public/
+index.html
+.gitignore
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+.npmignore

@@ -1,0 +1,73 @@
+{
+  "name": "test-api-key",
+  "description": "A simple tool to validate and test API keys for multiple providers (OpenAI, Anthropic, Google, Mistral, etc.)",
+  "private": false,
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "author": {
+    "name": "Usman Sanawar",
+    "url": "https://github.com/UsmanSanawar"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/UsmanSanawar/Test-Api-Key.git"
+  },
+  "homepage": "https://github.com/UsmanSanawar/Test-Api-Key",
+  "bugs": {
+    "url": "https://github.com/UsmanSanawar/Test-Api-Key/issues"
+  },
+  "keywords": [
+    "api-key",
+    "validator",
+    "openai",
+    "anthropic",
+    "google",
+    "mistral",
+    "cohere",
+    "hugging-face",
+    "groq",
+    "stripe",
+    "twilio",
+    "sendgrid",
+    "test",
+    "api",
+    "key-testing"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.24",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^7.2.4"
+  }
+}

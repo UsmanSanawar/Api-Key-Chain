@@ -1,0 +1,39 @@
+export type ProviderType =
+  | 'openai'
+  | 'anthropic'
+  | 'gemini'
+  | 'mistral'
+  | 'cohere'
+  | 'huggingface'
+  | 'groq'
+  | 'openrouter'
+  | 'together'
+  | 'perplexity'
+  | 'deepseek'
+  | 'github'
+  | 'stripe'
+  | 'twilio'
+  | 'googlemaps'
+  | 'sendgrid';
+
+export interface ApiTestResult {
+  id: string;
+  provider: ProviderType;
+  timestamp: number;
+  success: boolean;
+  statusCode?: number;
+  message: string;
+  latency?: number;
+  endpoint?: string;
+  keyPreview?: string;
+  fullKey?: string;
+}
+
+export interface BookmarkedKey {
+  id: string;
+  name: string;
+  provider: ProviderType;
+  keyPrefix: string; // Only store prefix for security
+  createdAt: number;
+}
+
