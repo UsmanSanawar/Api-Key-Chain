@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useKeyInput } from '../hooks/useKeyInput';
 import { useApiTest } from '../hooks/useApiTest';
+import { detectProvider } from '../utils/detection';
 import { PROVIDERS_SORTED } from '../../shared/providers';
 import type { ProviderType } from '../types';
 
@@ -24,6 +25,13 @@ export function KeyInput() {
   const [bulkKeys, setBulkKeys] = useState('');
 
   useEffect(() => {
+    // Force auto-detect when bulk mode is enabled
+    if (isBulkMode) {
+      setAutoDetect(true);
+    }
+  }, [isBulkMode]);
+
+  useEffect(() => {
     if (autoDetect && detectedProvider) {
       setSelectedProvider(detectedProvider);
     } else if (!autoDetect) {
@@ -42,12 +50,10 @@ export function KeyInput() {
   };
 
   const handleBulkTest = async () => {
-    let provider = selectedProvider;
-    
-    if (!provider || !bulkKeys.trim()) {
+    if (!bulkKeys.trim()) {
       setTestResult({
         success: false,
-        message: 'Please provide at least one API key and select a provider',
+        message: 'Please provide at least one API key',
       });
       return;
     }
@@ -62,26 +68,32 @@ export function KeyInput() {
     }
 
     setIsLoading(true);
+    setTestResult(null); // Clear previous result
     try {
-      // Test each key with 1 second delay
+      // Test each key with 1 second delay - each uses its own auto-detected provider
       for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
-        // Trigger tests through the same flow as single test
-        await test(provider, key);
+        // Auto-detect provider for this specific key
+        const provider = detectProvider(key);
+        
+        // Test with the detected provider (same as single test mode)
+        // If provider not detected, test will handle it (provider can be null)
+        if (provider) {
+          const result = await test(provider, key);
+          // Display each result immediately
+          setTestResult(result);
+        }
         
         // Add 1 second delay between tests (but not after the last one)
         if (i < keys.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
+      
+      // Show summary message after all tests complete
       setTestResult({
         success: true,
         message: `Successfully tested ${keys.length} API key${keys.length > 1 ? 's' : ''}. Results shown in history.`,
-      });
-    } catch (error) {
-      setTestResult({
-        success: false,
-        message: `Error during bulk testing: ${error instanceof Error ? error.message : 'Unknown error'}`,
       });
     } finally {
       setIsLoading(false);
@@ -183,10 +195,14 @@ export function KeyInput() {
           <div className="flex items-center justify-center gap-2">
             <span className="text-xs text-gray-400">Manual</span>
             <button
-              onClick={() => setAutoDetect(!autoDetect)}
+              onClick={() => !isBulkMode && setAutoDetect(!autoDetect)}
+              disabled={isBulkMode}
               className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                isBulkMode ? 'opacity-50 cursor-not-allowed' : ''
+              } ${
                 autoDetect ? 'bg-blue-600' : 'bg-gray-600'
               }`}
+              title={isBulkMode ? 'Auto-detect is forced in bulk mode' : ''}
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -195,6 +211,7 @@ export function KeyInput() {
               />
             </button>
             <span className="text-xs text-gray-400">Auto</span>
+            {isBulkMode && <span className="text-xs text-amber-400 ml-2">(forced)</span>}
           </div>
 
           <div className="flex justify-end">
@@ -218,7 +235,7 @@ export function KeyInput() {
             );
           }).map((provider) => {
             const isSelected = selectedProvider === provider.id;
-            const isDisabled = autoDetect;
+            const isDisabled = autoDetect || isBulkMode;
 
             return (
               <button
@@ -261,7 +278,7 @@ export function KeyInput() {
       <div className="flex gap-2">
         <button
           onClick={handleTest}
-          disabled={isLoading || (!isBulkMode && !apiKey) || (isBulkMode && !bulkKeys.trim()) || !selectedProvider}
+          disabled={isLoading || (!isBulkMode && (!apiKey || !selectedProvider)) || (isBulkMode && !bulkKeys.trim())}
           className="flex-1 py-3 px-5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition text-sm shadow-xl transform hover:scale-105 active:scale-95 disabled:hover:scale-100 border border-blue-400 disabled:border-slate-500"
         >
           {isLoading ? (
