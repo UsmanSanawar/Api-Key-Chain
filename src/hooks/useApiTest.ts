@@ -29,6 +29,7 @@ export function useApiTest() {
           latency: testResult.latency,
           keyPreview,
           fullKey: apiKey,
+          responseBody: testResult.responseBody,
         };
 
         console.log(`[API Test] Test result:`, result);

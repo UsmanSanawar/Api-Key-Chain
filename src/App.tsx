@@ -12,7 +12,7 @@ function App() {
   useEffect(() => {
     if (!import.meta.env.DEV) return;
 
-    console.log('🚀 API Key Tester Started');
+    console.log('🚀 Test-Api-Key Started');
     console.log('📊 Console and Network logging enabled');
     console.log('📝 Check the Network tab (F12 → Network) to see API requests');
 
@@ -61,7 +61,7 @@ function App() {
             </div>
           </div>
           <h1 className="text-3xl md:text-5xl font-black mb-2 bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 bg-clip-text text-transparent">
-            API Key Tester
+            Test API Key
           </h1>
           <p className="text-gray-300 text-sm max-w-3xl mx-auto leading-relaxed font-light">
             Test your API keys instantly. Secure, fast, and completely transparent.

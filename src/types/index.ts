@@ -27,6 +27,7 @@ export interface ApiTestResult {
   endpoint?: string;
   keyPreview?: string;
   fullKey?: string;
+  responseBody?: string;
 }
 
 export interface BookmarkedKey {
