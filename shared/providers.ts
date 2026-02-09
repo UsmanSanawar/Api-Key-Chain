@@ -17,22 +17,6 @@ export type ProviderMeta = {
   request: (apiKey: string) => ProviderRequest;
 };
 
-function buildBasicAuth(apiKey: string): string {
-  try {
-    if (typeof btoa === 'function') return btoa(apiKey);
-  } catch {
-    // ignore
-  }
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const bufferCtor = (globalThis as any).Buffer;
-    if (bufferCtor) return bufferCtor.from(apiKey).toString('base64');
-  } catch {
-    // ignore
-  }
-  return '';
-}
-
 export const PROVIDERS: ProviderMeta[] = [
   {
     id: 'openai',
@@ -76,9 +60,9 @@ export const PROVIDERS: ProviderMeta[] = [
     id: 'mistral',
     name: 'Mistral',
     color: 'bg-rose-600',
-    detectPattern: /^mistral_/,
+    detectPattern: null,
     order: 40,
-    detectPriority: 30,
+    detectPriority: 999,
     logoUrl: 'https://mistral.ai/_next/image?url=%2Fstatic%2Fbranding%2Fmistral-logo%2Fmistral-logo-color-black.png&w=828&q=75',
     request: (apiKey) => ({
       url: 'https://api.mistral.ai/v1/models',
@@ -89,9 +73,9 @@ export const PROVIDERS: ProviderMeta[] = [
     id: 'cohere',
     name: 'Cohere',
     color: 'bg-emerald-600',
-    detectPattern: /^[a-z0-9]{36}$/,
+    detectPattern: null,
     order: 50,
-    detectPriority: 120,
+    detectPriority: 999,
     logoUrl: 'https://upload.wikimedia.org/wikipedia/en/0/0c/Cohere_logo.svg',
     request: (apiKey) => ({
       url: 'https://api.cohere.ai/v1/models',
@@ -141,9 +125,9 @@ export const PROVIDERS: ProviderMeta[] = [
     id: 'together',
     name: 'Together',
     color: 'bg-fuchsia-600',
-    detectPattern: /^together_/,
+    detectPattern: null,
     order: 90,
-    detectPriority: 40,
+    detectPriority: 999,
     logoUrl: 'https://cdn.prod.website-files.com/64f6f2c0e3f4c5a91c1e823a/6500732503885fd3e7e06d70_logo-dark.svg',
     request: (apiKey) => ({
       url: 'https://api.together.xyz/v1/models',
@@ -167,9 +151,9 @@ export const PROVIDERS: ProviderMeta[] = [
     id: 'deepseek',
     name: 'DeepSeek',
     color: 'bg-sky-600',
-    detectPattern: /^sk-deepseek-/,
+    detectPattern: null,
     order: 110,
-    detectPriority: 60,
+    detectPriority: 999,
     logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/ec/DeepSeek_logo.svg',
     request: (apiKey) => ({
       url: 'https://api.deepseek.com/v1/models',
@@ -206,22 +190,7 @@ export const PROVIDERS: ProviderMeta[] = [
       headers: { Authorization: `Bearer ${apiKey}` },
     }),
   },
-  {
-    id: 'twilio',
-    name: 'Twilio',
-    color: 'bg-red-600',
-    detectPattern: /^SK[0-9a-fA-F]{32}/,
-    order: 140,
-    detectPriority: 85,
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/Twilio-logo-red.svg',
-    request: (apiKey) => {
-      const basic = buildBasicAuth(apiKey);
-      return {
-        url: 'https://api.twilio.com/2010-04-01/Accounts.json',
-        headers: basic ? { Authorization: `Basic ${basic}` } : undefined,
-      };
-    },
-  },
+
   {
     id: 'googlemaps',
     name: 'Google Maps',

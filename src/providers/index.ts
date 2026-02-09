@@ -27,6 +27,10 @@ export async function testProvider(provider: string, apiKey: string): Promise<Te
     return { success: false, message: 'Provider not supported yet' };
   }
 
+  // Pre-validate: if the key matches the provider's expected format pattern,
+  // any subsequent API error means the key is incorrect (not a format issue).
+  const formatValid = meta.detectPattern ? meta.detectPattern.test(apiKey) : true;
+
   const request = meta.request(apiKey);
 
   try {
@@ -38,7 +42,7 @@ export async function testProvider(provider: string, apiKey: string): Promise<Te
 
     const latency = Date.now() - startTime;
 
-    // Read response body for debugging
+    // Read response body for debugging (may be empty due to CORS)
     const rawBody = await response.text().catch(() => '');
     let parsedBody: Record<string, unknown> | null = null;
     try { parsedBody = JSON.parse(rawBody); } catch { /* not JSON */ }
@@ -63,6 +67,22 @@ export async function testProvider(provider: string, apiKey: string): Promise<Te
         ? (errorDetail as Record<string, unknown>).message as string || ''
         : '';
 
+    // Determine if this is a format issue or an incorrect key:
+    // 1. If response body explicitly mentions invalid key → incorrect key
+    // 2. If key matches the provider's expected format → incorrect key (format is fine)
+    // 3. If key doesn't match format and no clear signal → format issue
+    const bodyHintsIncorrect = errorMessage.toLowerCase().includes('api key not valid')
+      || errorMessage.toLowerCase().includes('invalid api key')
+      || errorMessage.toLowerCase().includes('invalid key')
+      || errorMessage.toLowerCase().includes('api_key_invalid')
+      || errorMessage.toLowerCase().includes('unauthorized')
+      || errorMessage.toLowerCase().includes('not found')
+      || errorMessage.toLowerCase().includes('denied');
+
+    const bodyHintsFormat = errorMessage.toLowerCase().includes('malformed')
+      || errorMessage.toLowerCase().includes('format')
+      || errorMessage.toLowerCase().includes('parse error');
+
     if (response.status === 401) {
       return { success: false, message: `Invalid or incorrect API key (401 Unauthorized)${errorMessage ? ': ' + errorMessage : ''}`, latency, responseBody: rawBody };
     }
@@ -76,17 +96,22 @@ export async function testProvider(provider: string, apiKey: string): Promise<Te
     }
 
     if (response.status === 400) {
-      // Differentiate: if the error mentions "invalid" key specifically, it's an incorrect key, not bad format
-      const isIncorrectKey = errorMessage.toLowerCase().includes('api key not valid')
-        || errorMessage.toLowerCase().includes('invalid api key')
-        || errorMessage.toLowerCase().includes('invalid key')
-        || errorMessage.toLowerCase().includes('api_key_invalid');
-      if (isIncorrectKey) {
-        return { success: false, message: `Invalid or incorrect API key (400)${errorMessage ? ': ' + errorMessage : ''}`, latency, responseBody: rawBody };
+      // Use body hints if available, otherwise fall back to format pattern check
+      if (bodyHintsFormat && !bodyHintsIncorrect) {
+        return { success: false, message: `Invalid API key format (400)${errorMessage ? ': ' + errorMessage : ''}`, latency, responseBody: rawBody };
       }
-      return { success: false, message: `Invalid API key format (400 Bad Request)${errorMessage ? ': ' + errorMessage : ''}`, latency, responseBody: rawBody };
+      if (bodyHintsIncorrect || formatValid) {
+        // Key format matches but API rejected it → incorrect key
+        return { success: false, message: `Invalid or incorrect API key (400 Bad Request)${errorMessage ? ': ' + errorMessage : ''}`, latency, responseBody: rawBody };
+      }
+      // Key doesn't match expected format and no body hints
+      return { success: false, message: `Invalid API key format (400)${errorMessage ? ': ' + errorMessage : ''}`, latency, responseBody: rawBody };
     }
 
+    // Other error statuses
+    if (formatValid || bodyHintsIncorrect) {
+      return { success: false, message: `Invalid or incorrect API key (${response.status})${errorMessage ? ': ' + errorMessage : ''}`, latency, responseBody: rawBody };
+    }
     return { success: false, message: `API error: ${response.status} ${response.statusText}${errorMessage ? ' - ' + errorMessage : ''}`, latency, responseBody: rawBody };
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : 'Unknown error';

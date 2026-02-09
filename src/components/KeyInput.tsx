@@ -126,9 +126,9 @@ export function KeyInput() {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-4 text-center">
+    <div className="w-full max-w-2xl mx-auto space-y-2 text-center">
       {/* API Key Input Section */}
-      <div className="space-y-2 p-4 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-700 rounded-xl shadow-2xl backdrop-blur-sm">
+      <div className="space-y-1.5 p-3 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-700 rounded-xl shadow-xl backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <label className="block text-xs font-bold text-gray-200 uppercase tracking-widest">
             API Key
@@ -160,7 +160,7 @@ export function KeyInput() {
                 value={bulkKeys}
                 onChange={(e) => setBulkKeys(e.target.value)}
                 placeholder="Insert/paste API keys each in new line OR separated by comma"
-                className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition font-mono text-xs min-h-[100px] resize-none"
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition font-mono text-[11px] min-h-[70px] resize-none"
               />
             ) : (
               <>
@@ -169,7 +169,7 @@ export function KeyInput() {
                   value={apiKey}
                   onChange={(e) => handleKeyChange(e.target.value)}
                   placeholder="Paste your API key..."
-                  className="w-full px-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition font-mono text-xs"
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition font-mono text-[11px]"
                 />
                 <button
                   onClick={() => setShowKey(!showKey)}
@@ -185,7 +185,7 @@ export function KeyInput() {
       </div>
 
       {/* Provider Selection Section */}
-      <div className="space-y-3 p-5 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-700 rounded-2xl shadow-2xl backdrop-blur-sm">
+      <div className="space-y-2 p-3 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-700 rounded-xl shadow-xl backdrop-blur-sm">
         <div className="flex items-center justify-between gap-2">
           <label className="block text-xs font-bold text-gray-200 uppercase tracking-widest">
             Provider
@@ -225,7 +225,7 @@ export function KeyInput() {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-5 gap-1.5">
           {PROVIDERS_SORTED.filter((provider) => {
             const query = providerSearch.trim().toLowerCase();
             if (!query) return true;
@@ -242,20 +242,20 @@ export function KeyInput() {
                 key={provider.id}
                 onClick={() => !isDisabled && setSelectedProvider(provider.id)}
                 disabled={isDisabled}
-                className={`py-2 px-2 rounded-lg transition border-2 flex flex-col items-center justify-center gap-0.5 h-16 ${
+                className={`py-1 px-1.5 rounded-lg transition border-2 flex flex-col items-center justify-center gap-0 h-11 ${
                   isSelected
                     ? 'bg-[#f2f5f3] text-slate-900 opacity-100 shadow-lg border-blue-400'
                     : 'bg-[#f2f5f3] text-slate-800 border-gray-300'
                 } ${
-                  isDisabled ? 'cursor-not-allowed opacity-50' : 'hover:shadow-md hover:scale-110 active:scale-95 transition-transform duration-200'
+                  isDisabled ? 'cursor-not-allowed opacity-50' : 'hover:shadow-md hover:scale-105 active:scale-95 transition-transform duration-200'
                 }`}
               >
                 <img 
                   src={provider.logoUrl} 
                   alt={provider.name}
-                  className="w-auto h-full object-contain max-h-[60px]"
+                  className="w-auto h-full object-contain max-h-[28px]"
                 />
-                <span className="text-[10px] leading-tight">{provider.name}</span>
+                <span className="text-[8px] leading-tight">{provider.name}</span>
               </button>
             );
           })}
@@ -266,12 +266,6 @@ export function KeyInput() {
             If this is a Google Maps key, switch to Google Maps manually.
           </div>
         )}
-
-        {selectedProvider === 'twilio' && (
-          <div className="text-[10px] text-amber-300 text-center">
-            Twilio needs Account SID + Auth Token or API Key + Secret (Basic auth).
-          </div>
-        )}
       </div>
 
       {/* Action Buttons */}
@@ -279,10 +273,10 @@ export function KeyInput() {
         <button
           onClick={handleTest}
           disabled={isLoading || (!isBulkMode && (!apiKey || !selectedProvider)) || (isBulkMode && !bulkKeys.trim())}
-          className="flex-1 py-3 px-5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition text-sm shadow-xl transform hover:scale-105 active:scale-95 disabled:hover:scale-100 border border-blue-400 disabled:border-slate-500"
+          className="flex-1 py-2 px-4 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition text-xs shadow-lg hover:scale-[1.02] active:scale-95 disabled:hover:scale-100 border border-blue-400 disabled:border-slate-500"
         >
           {isLoading ? (
-            <span className="flex items-center justify-center gap-2">
+            <span className="flex items-center justify-center gap-1.5">
               <span className="animate-spin">⚙️</span> Testing...
             </span>
           ) : (
@@ -296,15 +290,15 @@ export function KeyInput() {
             setTestResult(null);
             setShowKey(false);
           }}
-          className="px-5 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition shadow-lg transform hover:scale-105 active:scale-95 border border-slate-600 text-xs"
+          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition shadow-md hover:scale-[1.02] active:scale-95 border border-slate-600 text-[11px]"
         >
           🗑️ Clear
         </button>
       </div>
 
       {/* Info Box */}
-      <div className="p-3 bg-gradient-to-r from-indigo-900 via-purple-900 to-indigo-900 border border-indigo-700 rounded-lg text-indigo-100 shadow-lg" style={{fontSize: '10px'}}>
-        <div className="flex items-center justify-center gap-3 flex-wrap">
+      <div className="p-2 bg-gradient-to-r from-indigo-900 via-purple-900 to-indigo-900 border border-indigo-700 rounded-lg text-indigo-100 shadow-md" style={{fontSize: '9px'}}>
+        <div className="flex items-center justify-center gap-2 flex-wrap">
           <span className="font-bold flex items-center gap-1">💡 Tip:</span>
           <span className="text-indigo-200">Paste key with Ctrl+V</span>
           <span className="text-indigo-200">• 👁️ to show/hide</span>
@@ -315,18 +309,18 @@ export function KeyInput() {
       {/* Test Result */}
       {testResult && (
         <div
-          className={`p-3 rounded-lg border-l-4 shadow-xl transform transition ${
+          className={`p-2.5 rounded-lg border-l-4 shadow-lg transition ${
             testResult.success
               ? 'bg-gradient-to-r from-green-900 to-green-800 border-green-400 text-green-100'
               : 'bg-gradient-to-r from-red-900 to-red-800 border-red-400 text-red-100'
           }`}
         >
-          <p className="font-bold text-sm flex items-center gap-2">
+          <p className="font-bold text-xs flex items-center gap-1.5">
             {testResult.success ? '✅ Success' : '❌ Failed'}
           </p>
-          <p className="text-xs mt-1.5 leading-relaxed">{testResult.message}</p>
+          <p className="text-[11px] mt-1 leading-relaxed">{testResult.message}</p>
           {testResult.latency && (
-            <p className="text-xs mt-1.5 opacity-90 flex items-center gap-2 font-mono">
+            <p className="text-[11px] mt-1 opacity-90 flex items-center gap-1.5 font-mono">
               <span>⏱️</span> <strong>{testResult.latency.toFixed(0)}ms</strong>
             </p>
           )}

@@ -12,7 +12,6 @@ export type ProviderType =
   | 'deepseek'
   | 'github'
   | 'stripe'
-  | 'twilio'
   | 'googlemaps'
   | 'sendgrid';
 
