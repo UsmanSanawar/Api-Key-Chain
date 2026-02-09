@@ -10,9 +10,6 @@ export function useApiTest() {
     async (provider: ProviderType, apiKey: string) => {
       const startTime = Date.now();
       
-      console.log(`[API Test] Starting test for provider: ${provider}`);
-      console.log(`[API Test] API Key length: ${apiKey.length} characters`);
-      
       let testResult;
 
       try {
@@ -32,18 +29,10 @@ export function useApiTest() {
           responseBody: testResult.responseBody,
         };
 
-        console.log(`[API Test] Test result:`, result);
-        console.log(`[API Test] Status: ${result.success ? '✅ SUCCESS' : '❌ FAILED'}`);
-        if (result.latency) {
-          console.log(`[API Test] Response time: ${result.latency}ms`);
-        }
-
         addResult(result);
         return testResult;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`[API Test] Error occurred:`, error);
-        console.error(`[API Test] Error message: ${errorMessage}`);
         
         return {
           success: false,

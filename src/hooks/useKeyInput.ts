@@ -10,9 +10,6 @@ export function useKeyInput() {
     setApiKey(value);
     const provider = detectProvider(value);
     setDetectedProvider(provider);
-    if (provider) {
-      console.log(`[KeyInput] Auto-detected provider: ${provider}`);
-    }
   };
 
   const reset = () => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import './App.css';
 import { KeyInput } from './components/KeyInput';
 import { ResultsHistory } from './components/ResultsHistory';
@@ -7,40 +7,6 @@ import { useAppStore } from './store/useAppStore';
 function App() {
   const [showHistory, setShowHistory] = useState(false);
   const results = useAppStore((state) => state.results);
-
-  // Enable console and network logging for testing
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-
-    console.log('🚀 Test-Api-Key Started');
-    console.log('📊 Console and Network logging enabled');
-    console.log('📝 Check the Network tab (F12 → Network) to see API requests');
-
-    // Override console methods to add timestamp
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-
-    const timestamp = () => new Date().toLocaleTimeString();
-
-    console.log = (...args) => {
-      originalLog(`[${timestamp()}]`, ...args);
-    };
-
-    console.error = (...args) => {
-      originalError(`[${timestamp()}]`, ...args);
-    };
-
-    console.warn = (...args) => {
-      originalWarn(`[${timestamp()}]`, ...args);
-    };
-
-    return () => {
-      console.log = originalLog;
-      console.error = originalError;
-      console.warn = originalWarn;
-    };
-  }, []);
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-gray-950 via-slate-900 to-gray-950 text-white flex flex-col items-center justify-start p-3 md:p-4">
@@ -61,6 +27,12 @@ function App() {
           <p className="text-gray-400 text-xs max-w-xl mx-auto leading-relaxed">
             Test your API keys instantly. Secure, fast, and completely transparent.
           </p>
+          <p className="text-gray-400 text-xs max-w-xl mx-auto leading-relaxed">
+            Your keys never leave your browser. All tests run client-side. No servers, no storage, no tricks.
+          </p>
+          <a href="https://github.com/UsmanSanawar/Test-Api-Key" target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-blue-400 hover:text-blue-300 text-[11px] underline underline-offset-2 transition">
+            Review the source code →
+          </a>
           <div className="mt-1.5 flex flex-wrap justify-center gap-1.5">
             <span className="px-2 py-0.5 bg-gradient-to-r from-green-900 to-green-800 text-green-300 rounded-full text-[10px] font-semibold border border-green-700">✓ Open Source</span>
             <span className="px-2 py-0.5 bg-gradient-to-r from-blue-900 to-blue-800 text-blue-300 rounded-full text-[10px] font-semibold border border-blue-700">🔒 Private</span>
