@@ -12,8 +12,12 @@ export type ProviderType =
   | 'deepseek'
   | 'github'
   | 'stripe'
-  | 'googlemaps'
-  | 'sendgrid';
+  | 'sendgrid'
+  | 'xai'
+  | 'glm'
+  | 'kimi'
+  | 'qwen'
+  | 'doubao';
 
 export interface ApiTestResult {
   id: string;

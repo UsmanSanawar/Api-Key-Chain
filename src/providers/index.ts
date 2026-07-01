@@ -47,14 +47,6 @@ export async function testProvider(provider: string, apiKey: string): Promise<Te
     let parsedBody: Record<string, unknown> | null = null;
     try { parsedBody = JSON.parse(rawBody); } catch { /* not JSON */ }
 
-    if (request.parseAs === 'googlemaps') {
-      const status = (parsedBody as Record<string, unknown>)?.status as string | undefined;
-      if (status === 'OK' || status === 'ZERO_RESULTS') {
-        return { success: true, message: 'API key is valid', latency, responseBody: rawBody };
-      }
-      return { success: false, message: status ? `API error: ${status}` : 'API error: Invalid response', latency, responseBody: rawBody };
-    }
-
     if (response.ok) {
       return { success: true, message: 'API key is valid', latency, responseBody: rawBody };
     }

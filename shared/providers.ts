@@ -3,7 +3,6 @@ import type { ProviderType } from '../src/types';
 export type ProviderRequest = {
   url: string;
   headers?: Record<string, string>;
-  parseAs?: 'googlemaps';
 };
 
 export type ProviderMeta = {
@@ -22,7 +21,7 @@ export const PROVIDERS: ProviderMeta[] = [
     id: 'openai',
     name: 'OpenAI',
     color: 'bg-green-600',
-    detectPattern: /^sk-/,
+    detectPattern: /^sk-(proj-[^.]*\.|.*T3BlbkFJ)/,
     order: 10,
     detectPriority: 90,
     logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg',
@@ -73,9 +72,9 @@ export const PROVIDERS: ProviderMeta[] = [
     id: 'cohere',
     name: 'Cohere',
     color: 'bg-emerald-600',
-    detectPattern: null,
+    detectPattern: /^co_/,
     order: 50,
-    detectPriority: 999,
+    detectPriority: 85,
     logoUrl: 'https://upload.wikimedia.org/wikipedia/en/0/0c/Cohere_logo.svg',
     request: (apiKey) => ({
       url: 'https://api.cohere.ai/v1/models',
@@ -148,15 +147,93 @@ export const PROVIDERS: ProviderMeta[] = [
     }),
   },
   {
+    id: 'xai',
+    name: 'xAI (Grok)',
+    color: 'bg-lime-600',
+    detectPattern: /^xai-/,
+    order: 105,
+    detectPriority: 55,
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/XAI_logo.svg/1200px-XAI_logo.svg.png',
+    request: (apiKey) => ({
+      url: 'https://api.x.ai/v1/models',
+      headers: { Authorization: `Bearer ${apiKey}` },
+    }),
+  },
+  {
+    id: 'glm',
+    name: 'GLM (ZhiPu AI)',
+    color: 'bg-pink-600',
+    detectPattern: null,
+    order: 115,
+    detectPriority: 999,
+    logoUrl: 'https://bigmodel.ai/_next/static/media/logo.76b9c7b0.png',
+    request: (apiKey) => ({
+      url: 'https://open.bigmodel.cn/api/paas/v4/models',
+      headers: { Authorization: `Bearer ${apiKey}` },
+    }),
+  },
+  {
+    id: 'kimi',
+    name: 'Kimi (Moonshot)',
+    color: 'bg-slate-600',
+    detectPattern: null,
+    order: 117,
+    detectPriority: 999,
+    logoUrl: 'https://www.moonshot.cn/_next/static/media/logo.8c9d8a2b.png',
+    request: (apiKey) => ({
+      url: 'https://api.moonshot.cn/v1/models',
+      headers: { Authorization: `Bearer ${apiKey}` },
+    }),
+  },
+  {
+    id: 'qwen',
+    name: 'Qwen (Alibaba)',
+    color: 'bg-red-600',
+    detectPattern: null,
+    order: 118,
+    detectPriority: 999,
+    logoUrl: 'https://img.alicdn.com/imgextra/i3/O1CN01QomVqX1c3hEsDdmHv_!!6000000003115-2-tps-150-150.png',
+    request: (apiKey) => ({
+      url: 'https://dashscope.aliyuncs.com/compatible-mode/v1/models',
+      headers: { Authorization: `Bearer ${apiKey}` },
+    }),
+  },
+  {
+    id: 'doubao',
+    name: 'Doubao (ByteDance)',
+    color: 'bg-blue-500',
+    detectPattern: null,
+    order: 119,
+    detectPriority: 999,
+    logoUrl: 'https://www.volcengine.com/assets/favicon.ico',
+    request: (apiKey) => ({
+      url: 'https://ark.cn-beijing.volces.com/api/v3/models',
+      headers: { Authorization: `Bearer ${apiKey}` },
+    }),
+  },
+  {
     id: 'deepseek',
     name: 'DeepSeek',
     color: 'bg-sky-600',
-    detectPattern: null,
-    order: 110,
-    detectPriority: 999,
+    detectPattern: /^sk-[a-f0-9]{32}$/,
+    order: 120,
+    detectPriority: 30,
     logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/ec/DeepSeek_logo.svg',
     request: (apiKey) => ({
       url: 'https://api.deepseek.com/v1/models',
+      headers: { Authorization: `Bearer ${apiKey}` },
+    }),
+  },
+  {
+    id: 'stripe',
+    name: 'Stripe',
+    color: 'bg-purple-700',
+    detectPattern: /^sk_(test|live)_/,
+    order: 125,
+    detectPriority: 75,
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg',
+    request: (apiKey) => ({
+      url: 'https://api.stripe.com/v1/customers?limit=1',
       headers: { Authorization: `Bearer ${apiKey}` },
     }),
   },
@@ -165,8 +242,8 @@ export const PROVIDERS: ProviderMeta[] = [
     name: 'GitHub',
     color: 'bg-gray-700',
     detectPattern: /^(ghp_|github_pat_)/,
-    order: 120,
-    detectPriority: 70,
+    order: 130,
+    detectPriority: 60,
     logoUrl: 'https://brand.github.com/_next/static/media/logo-03.cc5e5332.png',
     request: (apiKey) => ({
       url: 'https://api.github.com/user',
@@ -175,33 +252,6 @@ export const PROVIDERS: ProviderMeta[] = [
         Accept: 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
       },
-    }),
-  },
-  {
-    id: 'stripe',
-    name: 'Stripe',
-    color: 'bg-purple-700',
-    detectPattern: /^sk_(test|live)_/,
-    order: 130,
-    detectPriority: 75,
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg',
-    request: (apiKey) => ({
-      url: 'https://api.stripe.com/v1/customers?limit=1',
-      headers: { Authorization: `Bearer ${apiKey}` },
-    }),
-  },
-
-  {
-    id: 'googlemaps',
-    name: 'Google Maps',
-    color: 'bg-teal-600',
-    detectPattern: null,
-    order: 31,
-    detectPriority: 999,
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/dc/Google_Maps_Logo.svg',
-    request: (apiKey) => ({
-      url: `https://maps.googleapis.com/maps/api/geocode/json?address=Berlin&key=${apiKey}`,
-      parseAs: 'googlemaps',
     }),
   },
   {

@@ -112,20 +112,10 @@ const devApiProxy = () => ({
 
           const latency = Date.now() - startTime;
 
-          let message = 'API key is valid';
+let message = 'API key is valid';
           let success = response.ok || response.status === 429;
 
-          if (provider === 'googlemaps') {
-            const data = await response.json().catch(() => null);
-            const status = data?.status as string | undefined;
-            if (status === 'OK' || status === 'ZERO_RESULTS') {
-              success = true;
-              message = 'API key is valid';
-            } else {
-              success = false;
-              message = status ? `API error: ${status}` : 'API error: Invalid response';
-            }
-          } else if (!response.ok) {
+          if (!response.ok) {
             if (response.status === 401) {
               message = 'Invalid or expired API key (401 Unauthorized)';
             } else if (response.status === 403) {
