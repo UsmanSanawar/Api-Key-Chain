@@ -96,6 +96,21 @@ const devApiProxy = () => ({
           } else if (provider === 'sendgrid') {
             targetUrl = 'https://api.sendgrid.com/v3/user/profile';
             headers = { Authorization: `Bearer ${apiKey}` };
+          } else if (provider === 'xai') {
+            targetUrl = 'https://api.x.ai/v1/models';
+            headers = { Authorization: `Bearer ${apiKey}` };
+          } else if (provider === 'glm') {
+            targetUrl = 'https://open.bigmodel.cn/api/paas/v4/models';
+            headers = { Authorization: `Bearer ${apiKey}` };
+          } else if (provider === 'kimi') {
+            targetUrl = 'https://api.moonshot.cn/v1/models';
+            headers = { Authorization: `Bearer ${apiKey}` };
+          } else if (provider === 'qwen') {
+            targetUrl = 'https://dashscope.aliyuncs.com/compatible-mode/v1/models';
+            headers = { Authorization: `Bearer ${apiKey}` };
+          } else if (provider === 'doubao') {
+            targetUrl = 'https://ark.cn-beijing.volces.com/api/v3/models';
+            headers = { Authorization: `Bearer ${apiKey}` };
           } else {
             res.statusCode = 404;
             res.setHeader('Content-Type', 'application/json');
