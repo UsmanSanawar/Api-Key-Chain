@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useKeyInput } from '../hooks/useKeyInput';
 import { useApiTest } from '../hooks/useApiTest';
 import { detectProvider } from '../utils/detection';
-import { PROVIDERS_SORTED } from '../../shared/providers';
+import { PROVIDERS_SORTED, PROVIDER_MAP } from '../../shared/providers';
 import type { ProviderType } from '../types';
 
 export function KeyInput() {
@@ -15,7 +15,7 @@ export function KeyInput() {
   const { test } = useApiTest();
   const [isLoading, setIsLoading] = useState(false);
   const [testResult, setTestResult] = useState<
-    { success: boolean; message: string; latency?: number } | null
+    { success: boolean; message: string; latency?: number; responseBody?: string } | null
   >(null);
   const [selectedProvider, setSelectedProvider] = useState<ProviderType | null>(null);
   const [showKey, setShowKey] = useState(false);
@@ -23,6 +23,9 @@ export function KeyInput() {
   const [providerSearch, setProviderSearch] = useState('');
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [bulkKeys, setBulkKeys] = useState('');
+  const [showEndpoint, setShowEndpoint] = useState(false);
+  const [showResponse, setShowResponse] = useState(false);
+  const [showFullResponse, setShowFullResponse] = useState(false);
 
   useEffect(() => {
     // Force auto-detect when bulk mode is enabled
@@ -289,6 +292,9 @@ export function KeyInput() {
             setBulkKeys('');
             setTestResult(null);
             setShowKey(false);
+            setShowEndpoint(false);
+            setShowResponse(false);
+            setShowFullResponse(false);
           }}
           className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-lg transition shadow-md hover:scale-[1.02] active:scale-95 border border-slate-600 text-[11px]"
         >
@@ -307,25 +313,110 @@ export function KeyInput() {
       </div>
 
       {/* Test Result */}
-      {testResult && (
-        <div
-          className={`p-2.5 rounded-lg border-l-4 shadow-lg transition ${
-            testResult.success
-              ? 'bg-gradient-to-r from-green-900 to-green-800 border-green-400 text-green-100'
-              : 'bg-gradient-to-r from-red-900 to-red-800 border-red-400 text-red-100'
-          }`}
-        >
-          <p className="font-bold text-xs flex items-center gap-1.5">
-            {testResult.success ? '✅ Success' : '❌ Failed'}
-          </p>
-          <p className="text-[11px] mt-1 leading-relaxed">{testResult.message}</p>
-          {testResult.latency && (
-            <p className="text-[11px] mt-1 opacity-90 flex items-center gap-1.5 font-mono">
-              <span>⏱️</span> <strong>{testResult.latency.toFixed(0)}ms</strong>
-            </p>
-          )}
-        </div>
-      )}
+      {testResult && (() => {
+        const endpointUrl = selectedProvider ? PROVIDER_MAP[selectedProvider]?.request('')?.url : null;
+        const prettyResponse = (() => {
+          if (!testResult.responseBody) return null;
+          try {
+            const parsed = JSON.parse(testResult.responseBody);
+            return JSON.stringify(parsed, null, 2);
+          } catch {
+            return testResult.responseBody;
+          }
+        })();
+        const responseTruncated = prettyResponse && prettyResponse.length > 200;
+
+        return (
+          <div className="text-left">
+            <div
+              className={`p-2.5 rounded-lg border-l-4 shadow-lg transition ${
+                testResult.success
+                  ? 'bg-gradient-to-r from-green-900 to-green-800 border-green-400 text-green-100'
+                  : 'bg-gradient-to-r from-red-900 to-red-800 border-red-400 text-red-100'
+              }`}
+            >
+              {/* Top row: provider badge + status + toggles */}
+              <p className="font-bold text-xs flex items-center gap-1.5">
+                {selectedProvider && PROVIDER_MAP[selectedProvider] && (
+                  <span className={`${PROVIDER_MAP[selectedProvider].color || 'bg-gray-600'} px-1.5 py-px rounded text-white font-bold shrink-0`} style={{fontSize: '9px'}}>
+                    {PROVIDER_MAP[selectedProvider].name}
+                  </span>
+                )}
+                {testResult.success ? '✅ Success' : '❌ Failed'}
+                {endpointUrl && (
+                  <button
+                    onClick={() => setShowEndpoint(!showEndpoint)}
+                    className={`px-1 py-px rounded text-[9px] font-mono transition-all ${
+                      showEndpoint
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-slate-700/70 hover:bg-slate-600 text-gray-400 hover:text-gray-200'
+                    }`}
+                    title="Toggle endpoint URL"
+                  >
+                    🔗 endpoint
+                  </button>
+                )}
+                {testResult.responseBody && (
+                  <button
+                    onClick={() => setShowResponse(!showResponse)}
+                    className={`px-1 py-px rounded text-[9px] font-mono transition-all ${
+                      showResponse
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-slate-700/70 hover:bg-slate-600 text-gray-400 hover:text-gray-200'
+                    }`}
+                    title="Toggle response body"
+                  >
+                    📋 response
+                  </button>
+                )}
+              </p>
+
+              {/* Message */}
+              <p className="text-[11px] mt-1 leading-relaxed">{testResult.message}</p>
+
+              {/* Expanded: Endpoint */}
+              {showEndpoint && endpointUrl && (
+                <div className="mt-1.5 pt-1.5 border-t border-white/10">
+                  <div className="flex items-center gap-1.5 bg-black/25 rounded px-2 py-1">
+                    <span className="text-[9px] text-blue-300 shrink-0 font-bold">🔗 Endpoint:</span>
+                    <code className="font-mono text-[9px] text-blue-100 break-all flex-1">{endpointUrl}</code>
+                  </div>
+                </div>
+              )}
+
+              {/* Expanded: Response */}
+              {showResponse && prettyResponse && (
+                <div className="mt-1.5 pt-1.5 border-t border-white/10">
+                  <div className="bg-black/25 rounded px-2 py-1">
+                    <span className="text-[9px] text-purple-300 font-bold">📋 Response:</span>
+                    <pre className="font-mono text-[9px] text-purple-100 whitespace-pre-wrap break-all overflow-x-auto max-h-40 overflow-y-auto bg-black/20 rounded px-1.5 py-1 mt-0.5">
+                      {showFullResponse || !responseTruncated
+                        ? prettyResponse
+                        : prettyResponse.slice(0, 200) + '…'
+                      }
+                    </pre>
+                    {responseTruncated && (
+                      <button
+                        onClick={() => setShowFullResponse(!showFullResponse)}
+                        className="text-[9px] text-purple-400 hover:text-purple-200 transition mt-0.5"
+                      >
+                        {showFullResponse ? '▲ Show less' : `▼ Show full response (${prettyResponse.length} chars)`}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Latency */}
+              {testResult.latency && (
+                <p className="text-[11px] mt-1 opacity-90 flex items-center gap-1.5 font-mono">
+                  <span>⏱️</span> <strong>{testResult.latency.toFixed(0)}ms</strong>
+                </p>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

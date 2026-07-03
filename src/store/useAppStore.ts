@@ -22,13 +22,29 @@ const initialBookmarks =
     ? JSON.parse(localStorage.getItem('bookmarks') || '[]')
     : [];
 
+const initialResults: ApiTestResult[] =
+  typeof window !== 'undefined'
+    ? JSON.parse(localStorage.getItem('testResults') || '[]')
+    : [];
+
+const persistResults = (results: ApiTestResult[]) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('testResults', JSON.stringify(results));
+  }
+};
+
 export const useAppStore = create<AppStore>((set) => ({
-  results: [],
+  results: initialResults,
   addResult: (result) =>
-    set((state) => ({
-      results: [result, ...state.results].slice(0, 100), // Keep last 100
-    })),
-  clearResults: () => set({ results: [] }),
+    set((state) => {
+      const updated = [result, ...state.results].slice(0, 100);
+      persistResults(updated);
+      return { results: updated };
+    }),
+  clearResults: () => {
+    persistResults([]);
+    return { results: [] };
+  },
 
   bookmarks: initialBookmarks,
   addBookmark: (bookmark) =>

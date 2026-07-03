@@ -62,7 +62,7 @@ export const PROVIDERS: ProviderMeta[] = [
     detectPattern: null,
     order: 40,
     detectPriority: 999,
-    logoUrl: 'https://mistral.ai/_next/image?url=%2Fstatic%2Fbranding%2Fmistral-logo%2Fmistral-logo-color-black.png&w=828&q=75',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/e6/Mistral_AI_logo_%282025%E2%80%93%29.svg',
     request: (apiKey) => ({
       url: 'https://api.mistral.ai/v1/models',
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -153,7 +153,7 @@ export const PROVIDERS: ProviderMeta[] = [
     detectPattern: /^xai-/,
     order: 105,
     detectPriority: 55,
-    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/XAI_logo.svg/1200px-XAI_logo.svg.png',
+    logoUrl: "data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2.30047 8.77631L12.0474 23H16.3799L6.63183 8.77631H2.30047ZM6.6285 16.6762L2.29492 23H6.63072L8.79584 19.8387L6.6285 16.6762ZM17.3709 1L9.88007 11.9308L12.0474 15.0944L21.7067 1H17.3709ZM18.1555 7.76374V23H21.7067V2.5818L18.1555 7.76374Z' fill='%23000'/%3E%3C/svg%3E",
     request: (apiKey) => ({
       url: 'https://api.x.ai/v1/models',
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -166,7 +166,7 @@ export const PROVIDERS: ProviderMeta[] = [
     detectPattern: null,
     order: 115,
     detectPriority: 999,
-    logoUrl: 'https://bigmodel.ai/_next/static/media/logo.76b9c7b0.png',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/f4/Z.ai_%28company_logo%29.svg',
     request: (apiKey) => ({
       url: 'https://open.bigmodel.cn/api/paas/v4/models',
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -179,7 +179,7 @@ export const PROVIDERS: ProviderMeta[] = [
     detectPattern: null,
     order: 117,
     detectPriority: 999,
-    logoUrl: 'https://www.moonshot.cn/_next/static/media/logo.8c9d8a2b.png',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/8/87/Kimi-logo-2025.png',
     request: (apiKey) => ({
       url: 'https://api.moonshot.cn/v1/models',
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -192,7 +192,7 @@ export const PROVIDERS: ProviderMeta[] = [
     detectPattern: null,
     order: 118,
     detectPriority: 999,
-    logoUrl: 'https://img.alicdn.com/imgextra/i3/O1CN01QomVqX1c3hEsDdmHv_!!6000000003115-2-tps-150-150.png',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/65/Qwen_Logo.svg',
     request: (apiKey) => ({
       url: 'https://dashscope.aliyuncs.com/compatible-mode/v1/models',
       headers: { Authorization: `Bearer ${apiKey}` },
@@ -205,7 +205,7 @@ export const PROVIDERS: ProviderMeta[] = [
     detectPattern: null,
     order: 119,
     detectPriority: 999,
-    logoUrl: 'https://www.volcengine.com/assets/favicon.ico',
+    logoUrl: 'https://upload.wikimedia.org/wikipedia/en/f/ff/Doubao_logo.jpg',
     request: (apiKey) => ({
       url: 'https://ark.cn-beijing.volces.com/api/v3/models',
       headers: { Authorization: `Bearer ${apiKey}` },
