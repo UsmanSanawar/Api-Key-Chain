@@ -172,11 +172,19 @@ export function KeyInput() {
                   value={apiKey}
                   onChange={(e) => {
                     const val = e.target.value;
-                    if (val.includes('\n') || val.includes(',')) {
+                    if (val.includes(',')) {
                       setIsBulkMode(true);
                       setBulkKeys(val);
                     } else {
                       handleKeyChange(val);
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData.getData('text');
+                    if (pasted.includes('\n') || pasted.includes(',')) {
+                      e.preventDefault();
+                      setIsBulkMode(true);
+                      setBulkKeys(pasted);
                     }
                   }}
                   placeholder="Paste your API key..."
