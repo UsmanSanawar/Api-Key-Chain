@@ -31,6 +31,7 @@ export interface ApiTestResult {
   keyPreview?: string;
   fullKey?: string;
   responseBody?: string;
+  synced?: boolean;
 }
 
 export interface BookmarkedKey {
