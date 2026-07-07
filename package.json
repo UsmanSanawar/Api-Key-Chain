@@ -28,7 +28,6 @@
     "hugging-face",
     "groq",
     "stripe",
-    "twilio",
     "sendgrid",
     "test",
     "api",
