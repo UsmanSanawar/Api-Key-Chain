@@ -1,4 +1,6 @@
-# Api Key Chain 🔐
+<p align="center">
+  <img src="https://raw.githubusercontent.com/UsmanSanawar/Test-Api-Key/main/public/logo.png" alt="Api Key Chain" width="500" />
+</p>
 
 <p align="center">
   <img src="https://img.shields.io/npm/v/test-api-key?color=yellow" alt="npm version">
