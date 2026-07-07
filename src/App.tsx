@@ -30,7 +30,7 @@ function App() {
           <p className="text-gray-400 text-xs max-w-xl mx-auto leading-relaxed">
             Your keys never leave your browser. All tests run client-side. No servers, no storage, no tricks.
           </p>
-          <a href="https://github.com/UsmanSanawar/Test-Api-Key" target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-yellow-400 hover:text-yellow-300 text-[11px] underline underline-offset-2 transition">
+          <a href="https://github.com/UsmanSanawar/Api-Key-Chain" target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-yellow-400 hover:text-yellow-300 text-[11px] underline underline-offset-2 transition">
             Review the source code →
           </a>
           <div className="mt-1.5 flex flex-wrap justify-center gap-1.5">
@@ -68,7 +68,7 @@ function App() {
             {' '}with <span className="text-red-400">❤</span> for developers
           </p>
           <a
-            href="https://github.com/UsmanSanawar/Test-Api-Key"
+            href="https://github.com/UsmanSanawar/Api-Key-Chain"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-300 transition text-[10px]"

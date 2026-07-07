@@ -11,8 +11,8 @@ Please read and follow our [Code of Conduct](CODE_OF_CONDUCT.md).
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/Test-Api-Key.git
-   cd Test-Api-Key
+   git clone https://github.com/YOUR_USERNAME/Api-Key-Chain.git
+   cd Api-Key-Chain
    ```
 3. **Create a branch** for your feature:
    ```bash

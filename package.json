@@ -1,5 +1,5 @@
 {
-  "name": "test-api-key",
+  "name": "api-key-chain",
   "description": "A simple tool to validate and test API keys for multiple providers (OpenAI, Anthropic, Google, Mistral, etc.)",
   "private": false,
   "version": "1.0.0",
@@ -11,9 +11,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/UsmanSanawar/Test-Api-Key.git"
+    "url": "https://github.com/UsmanSanawar/Api-Key-Chain.git"
   },
-  "homepage": "https://github.com/UsmanSanawar/Test-Api-Key",
+  "homepage": "https://github.com/UsmanSanawar/Api-Key-Chain",
   "bugs": {
     "url": "https://github.com/UsmanSanawar/Api-Key-Chain/issues"
   },

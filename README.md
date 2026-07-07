@@ -3,9 +3,9 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/npm/v/test-api-key?color=yellow" alt="npm version">
-  <img src="https://img.shields.io/github/license/UsmanSanawar/Test-Api-Key?color=yellow" alt="license">
-  <img src="https://img.shields.io/github/stars/UsmanSanawar/Test-Api-Key?style=social" alt="stars">
+  <img src="https://img.shields.io/npm/v/api-key-chain?color=yellow" alt="npm version">
+  <img src="https://img.shields.io/github/license/UsmanSanawar/Api-Key-Chain?color=yellow" alt="license">
+  <img src="https://img.shields.io/github/stars/UsmanSanawar/Api-Key-Chain?style=social" alt="stars">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome">
 </p>
 
@@ -56,14 +56,14 @@ The OSS version is fully functional. The [cloud version](https://apikeychain.app
 ## 📦 Installation
 
 ```bash
-npm install test-api-key
+npm install api-key-chain
 ```
 
 ## ⚡ Quick Start
 
 ```jsx
-import { KeyInput, ResultsHistory } from 'test-api-key';
-import 'test-api-key/dist/style.css';
+import { KeyInput, ResultsHistory } from 'api-key-chain';
+import 'api-key-chain/dist/style.css';
 
 export default function App() {
   return (
@@ -78,8 +78,8 @@ export default function App() {
 Or clone and run the full app:
 
 ```bash
-git clone https://github.com/UsmanSanawar/Test-Api-Key.git
-cd Test-Api-Key
+git clone https://github.com/UsmanSanawar/Api-Key-Chain.git
+cd Api-Key-Chain
 npm install
 npm run dev
 ```
