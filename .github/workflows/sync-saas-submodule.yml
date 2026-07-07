@@ -1,0 +1,29 @@
+name: Sync SAAS submodule on OSS push
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout SAAS repo
+        uses: actions/checkout@v4
+        with:
+          repository: UsmanSanawar/Api-Key-Chain-SAAS
+          token: ${{ secrets.SAAS_REPO_TOKEN }}
+
+      - name: Update oss-core submodule to latest OSS commit
+        run: |
+          git submodule update --init oss-core
+          cd oss-core
+          git fetch origin main
+          git checkout ${{ github.sha }}
+
+      - name: Commit and push updated submodule pointer
+        run: |
+          git add oss-core
+          git diff --staged --quiet || \
+            git commit -m "chore: sync oss-core to ${{ github.sha }}"
+          git push
