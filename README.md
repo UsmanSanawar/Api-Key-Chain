@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/UsmanSanawar/Test-Api-Key/main/public/logo.png" alt="Api Key Chain" width="500" />
+  <img src="./public/logo.png" alt="Api Key Chain" width="500" />
 </p>
 
 <p align="center">
