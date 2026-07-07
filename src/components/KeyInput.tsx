@@ -404,7 +404,7 @@ export function KeyInput() {
               {showResponse && prettyResponse && (
                 <div className="mt-1.5 pt-1.5 border-t border-white/10">
                   <div className="bg-black/25 rounded px-2 py-1">
-                    <span className="text-[9px] text-purple-300 font-bold">📋 Response:</span>
+                    <span className="text-[9px] text-amber-300 font-bold">📋 Response:</span>
                     <pre className="font-mono text-[9px] text-purple-100 whitespace-pre-wrap break-all overflow-x-auto max-h-40 overflow-y-auto bg-black/20 rounded px-1.5 py-1 mt-0.5">
                       {showFullResponse || !responseTruncated
                         ? prettyResponse

@@ -21,8 +21,8 @@ function App() {
       <div className="relative w-full max-w-3xl mx-auto flex flex-col items-center text-center">
         {/* Header Section */}
         <header className="mb-3 text-center">
-          <h1 className="text-2xl md:text-3xl font-black mb-1 bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 bg-clip-text text-transparent flex items-center justify-center gap-2">
-            <span className="text-2xl">🔐</span> Test API Key
+          <h1 className="text-2xl md:text-3xl font-black mb-1 bg-gradient-to-r from-yellow-400 to-yellow-200 bg-clip-text text-transparent flex items-center justify-center gap-2">
+            <img src="/Api-Key-Chain-H.png" alt="Api Key Chain" className="h-32 w-auto" />
           </h1>
           <p className="text-gray-400 text-xs max-w-xl mx-auto leading-relaxed">
             Test your API keys instantly. Secure, fast, and completely transparent.
@@ -30,13 +30,13 @@ function App() {
           <p className="text-gray-400 text-xs max-w-xl mx-auto leading-relaxed">
             Your keys never leave your browser. All tests run client-side. No servers, no storage, no tricks.
           </p>
-          <a href="https://github.com/UsmanSanawar/Test-Api-Key" target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-blue-400 hover:text-blue-300 text-[11px] underline underline-offset-2 transition">
+          <a href="https://github.com/UsmanSanawar/Test-Api-Key" target="_blank" rel="noopener noreferrer" className="inline-block mt-1 text-yellow-400 hover:text-yellow-300 text-[11px] underline underline-offset-2 transition">
             Review the source code →
           </a>
           <div className="mt-1.5 flex flex-wrap justify-center gap-1.5">
             <span className="px-2 py-0.5 bg-gradient-to-r from-green-900 to-green-800 text-green-300 rounded-full text-[10px] font-semibold border border-green-700">✓ Open Source</span>
-            <span className="px-2 py-0.5 bg-gradient-to-r from-blue-900 to-blue-800 text-blue-300 rounded-full text-[10px] font-semibold border border-blue-700">🔒 Private</span>
-            <span className="px-2 py-0.5 bg-gradient-to-r from-purple-900 to-purple-800 text-purple-300 rounded-full text-[10px] font-semibold border border-purple-700">⚡ Instant</span>
+            <span className="px-2 py-0.5 bg-gradient-to-r from-yellow-900 to-yellow-800 text-blue-300 rounded-full text-[10px] font-semibold border border-yellow-700">🔒 Private</span>
+            <span className="px-2 py-0.5 bg-gradient-to-r from-amber-900 to-amber-800 text-amber-300 rounded-full text-[10px] font-semibold border border-amber-700">⚡ Instant</span>
           </div>
         </header>
 
@@ -62,7 +62,7 @@ function App() {
         <footer className="mt-3 text-center text-gray-400 text-[11px] border-t border-gray-800 pt-2.5 w-full space-y-1">
           <p>
             Made by{' '}
-            <a href="https://github.com/UsmanSanawar" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 font-semibold transition">
+            <a href="https://github.com/UsmanSanawar" target="_blank" rel="noopener noreferrer" className="text-yellow-400 hover:text-yellow-300 font-semibold transition">
               Usman
             </a>
             {' '}with <span className="text-red-400">❤</span> for developers

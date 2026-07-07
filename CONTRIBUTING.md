@@ -1,6 +1,6 @@
-# Contributing to Test API Key
+# Contributing to Api Key Chain
 
-Thank you for your interest in contributing! This document provides guidelines for contributing to the Test API Key project.
+Thank you for your interest in contributing! This document provides guidelines for contributing to the Api Key Chain project.
 
 ## Code of Conduct
 

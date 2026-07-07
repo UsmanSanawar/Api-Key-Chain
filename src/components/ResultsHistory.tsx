@@ -193,7 +193,7 @@ export function ResultsHistory() {
                 <div className="mt-1.5 pt-1.5 border-t border-white/10">
                   <div className="bg-black/25 rounded px-2 py-1">
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[9px] text-purple-300 font-bold">📋 Response:</span>
+                      <span className="text-[9px] text-amber-300 font-bold">📋 Response:</span>
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(prettyResponse);
