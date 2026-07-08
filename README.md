@@ -20,6 +20,11 @@
   <a href="https://apikeychain.app/pricing"><strong>☁️ Upgrade to Cloud →</strong></a>
 </p>
 
+<p align="center">
+  <strong>Tech Stack:</strong>
+  React 19 · Vite 7 · Tailwind CSS 4 · TypeScript · Zustand
+</p>
+
 ---
 
 ## 🚀 Features
@@ -154,6 +159,18 @@ api/
 
 ---
 
+## ⚙️ Architecture
+
+Keys are tested **entirely client-side**. When you paste a key:
+
+1. Your browser sends a real API request **directly** to the provider's endpoint (e.g., `api.openai.com/v1/models`)
+2. The response is shown instantly — status code, latency, and body
+3. **No intermediary server.** Nothing is logged. Nothing is stored.
+
+The production build also includes a [Vercel serverless function](api/test-provider.ts) as a CORS fallback, but even then keys are forwarded verbatim and never persisted.
+
+---
+
 ## 🛠️ Development
 
 ```bash
@@ -162,6 +179,13 @@ npm run dev        # Start dev server (http://localhost:5173)
 npm run build      # Production build
 npm run lint       # ESLint
 ```
+
+### 🔒 Security Note
+
+All key testing happens in your browser. Keys are sent directly to provider APIs, not to our servers.
+For the cloud version, saved keys are encrypted with AES-256-GCM before storage — see [Privacy Policy](https://apikeychain.app/privacy).
+
+---
 
 ### Adding a New Provider
 
