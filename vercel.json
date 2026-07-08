@@ -4,6 +4,9 @@
       "runtime": "@vercel/node@4.1.0"
     }
   },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
