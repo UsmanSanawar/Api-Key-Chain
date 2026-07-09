@@ -87,12 +87,6 @@ const devApiProxy = () => ({
           } else if (provider === 'stripe') {
             targetUrl = 'https://api.stripe.com/v1/customers?limit=1';
             headers = { Authorization: `Bearer ${apiKey}` };
-          } else if (provider === 'twilio') {
-            targetUrl = 'https://api.twilio.com/2010-04-01/Accounts.json';
-            const basic = Buffer.from(apiKey).toString('base64');
-            headers = { Authorization: `Basic ${basic}` };
-          } else if (provider === 'googlemaps') {
-            targetUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=Berlin&key=${apiKey}`;
           } else if (provider === 'sendgrid') {
             targetUrl = 'https://api.sendgrid.com/v3/user/profile';
             headers = { Authorization: `Bearer ${apiKey}` };

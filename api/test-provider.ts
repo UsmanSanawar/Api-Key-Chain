@@ -42,24 +42,6 @@ export default async function handler(request: any): Promise<any> {
 
     const latency = Date.now() - startTime;
 
-    if (requestInfo.parseAs === 'googlemaps') {
-      const data = await response.json().catch(() => null);
-      const status = data?.status as string | undefined;
-
-      if (status === 'OK' || status === 'ZERO_RESULTS') {
-        return new Response(
-          JSON.stringify({ success: true, message: 'API key is valid', latency, status: response.status }),
-          { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-        );
-      }
-
-      const message = status ? `API error: ${status}` : `API error: ${response.status} ${response.statusText}`;
-      return new Response(
-        JSON.stringify({ success: false, message, latency, status: response.status }),
-        { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-      );
-    }
-
     if (response.ok) {
       return new Response(
         JSON.stringify({ success: true, message: 'API key is valid', latency, status: response.status }),

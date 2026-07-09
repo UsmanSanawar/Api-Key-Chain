@@ -31,14 +31,4 @@ export interface ApiTestResult {
   keyPreview?: string;
   fullKey?: string;
   responseBody?: string;
-  synced?: boolean;
 }
-
-export interface BookmarkedKey {
-  id: string;
-  name: string;
-  provider: ProviderType;
-  keyPrefix: string; // Only store prefix for security
-  createdAt: number;
-}
-
