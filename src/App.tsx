@@ -22,7 +22,7 @@ function App() {
         {/* Header Section — flat layout, no card */}
         <header className="w-full max-w-2xl mx-auto mb-3 text-center">
           <h1 className="text-2xl md:text-3xl font-black mb-1 bg-gradient-to-r from-yellow-400 to-yellow-200 bg-clip-text text-transparent flex items-center justify-center gap-2">
-            <img src="/Api-Key-Chain-H.png" alt="Api Key Chain" className="h-32 w-auto" />
+            <img src="/Api-Key-Chain-H.webp" alt="Api Key Chain" width="374" height="128" className="h-32 w-auto" />
           </h1>
 
           <div className="flex items-center justify-center gap-2 mt-2">

@@ -142,6 +142,7 @@ export function KeyInput() {
             <span className="text-xs text-gray-400">Single</span>
             <button
               onClick={() => setIsBulkMode(!isBulkMode)}
+              aria-label={isBulkMode ? 'Switch to single key mode' : 'Switch to bulk key mode'}
               className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                 isBulkMode ? 'bg-blue-600' : 'bg-gray-600'
               }`}
@@ -216,6 +217,7 @@ export function KeyInput() {
             <button
               onClick={() => !isBulkMode && setAutoDetect(!autoDetect)}
               disabled={isBulkMode}
+              aria-label={autoDetect ? 'Switch to manual provider selection' : 'Switch to auto-detect provider'}
               className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
                 isBulkMode ? 'opacity-50 cursor-not-allowed' : ''
               } ${
