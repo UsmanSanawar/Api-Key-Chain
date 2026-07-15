@@ -131,7 +131,7 @@ export function KeyInput() {
   return (
     <div className="w-full max-w-2xl mx-auto space-y-2 text-center">
       {/* API Key Input Section */}
-      <div className="space-y-1.5 p-3 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-700 rounded-xl shadow-xl backdrop-blur-sm">
+      <div data-webmcp-tool="test_api_key" data-webmcp-description="Test and validate API keys for 19+ providers including OpenAI, Anthropic, Google Gemini, DeepSeek, and more" className="space-y-1.5 p-3 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-700 rounded-xl shadow-xl backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <label className="block text-xs font-bold text-gray-200 uppercase tracking-widest">
             API Key
