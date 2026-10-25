@@ -3,7 +3,31 @@ import { useKeyInput } from '../hooks/useKeyInput';
 import { useApiTest } from '../hooks/useApiTest';
 import { detectProvider } from '../utils/detection';
 import { PROVIDERS_SORTED, PROVIDER_MAP } from '../../shared/providers';
-import type { ProviderType } from '../types';
+import type { ProviderMeta } from '../../shared/providers';
+import type { ProviderType, TestVia } from '../types';
+
+type DisplayResult = {
+  success: boolean;
+  message: string;
+  latency?: number;
+  responseBody?: string;
+  endpoint?: string;
+  via?: TestVia;
+};
+
+const maskKey = (key: string) => (key.length > 10 ? `${key.slice(0, 6)}…${key.slice(-4)}` : '••••');
+
+export function ProviderLogo({ provider, className }: { provider: ProviderMeta; className?: string }) {
+  if (!provider.logoUrl) {
+    const initials = provider.name.replace(/\(.*\)/, '').trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2);
+    return (
+      <span className={`${provider.color} text-white font-bold rounded flex items-center justify-center text-[10px] w-7 h-7`}>
+        {initials.toUpperCase()}
+      </span>
+    );
+  }
+  return <img src={provider.logoUrl} alt={provider.name} loading="lazy" className={className} />;
+}
 
 export function KeyInput() {
   const {
@@ -14,9 +38,7 @@ export function KeyInput() {
   } = useKeyInput();
   const { test } = useApiTest();
   const [isLoading, setIsLoading] = useState(false);
-  const [testResult, setTestResult] = useState<
-    { success: boolean; message: string; latency?: number; responseBody?: string } | null
-  >(null);
+  const [testResult, setTestResult] = useState<DisplayResult | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<ProviderType | null>(null);
   const [showKey, setShowKey] = useState(false);
   const [autoDetect, setAutoDetect] = useState(true);
@@ -37,11 +59,10 @@ export function KeyInput() {
   useEffect(() => {
     if (autoDetect && detectedProvider) {
       setSelectedProvider(detectedProvider);
-    } else if (!autoDetect) {
-      // Keep manual selection when switching to manual mode
-    } else {
+    } else if (autoDetect) {
       setSelectedProvider(null);
     }
+    // In manual mode keep the user's selection.
   }, [detectedProvider, autoDetect]);
 
   // Parse bulk keys: support both newline and comma separated
@@ -53,7 +74,8 @@ export function KeyInput() {
   };
 
   const handleBulkTest = async () => {
-    if (!bulkKeys.trim()) {
+    const keys = parseBulkKeys(bulkKeys);
+    if (keys.length === 0) {
       setTestResult({
         success: false,
         message: 'Please provide at least one API key',
@@ -61,43 +83,41 @@ export function KeyInput() {
       return;
     }
 
-    const keys = parseBulkKeys(bulkKeys);
-    if (keys.length === 0) {
-      setTestResult({
-        success: false,
-        message: 'Please provide at least one valid API key',
-      });
-      return;
-    }
-
     setIsLoading(true);
-    setTestResult(null); // Clear previous result
+    setTestResult(null);
+    let valid = 0;
+    let invalid = 0;
+    const undetected: string[] = [];
+
     try {
-      // Test each key with 1 second delay - each uses its own auto-detected provider
       for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
-        // Auto-detect provider for this specific key
         const provider = detectProvider(key);
-        
-        // Test with the detected provider (same as single test mode)
-        // If provider not detected, test will handle it (provider can be null)
-        if (provider) {
-          const result = await test(provider, key);
-          // Display each result immediately
-          setTestResult(result);
+        if (!provider) {
+          undetected.push(key);
+          continue;
         }
-        
-        // Add 1 second delay between tests (but not after the last one)
+
+        const result = await test(provider, key);
+        if (result.success) valid++;
+        else invalid++;
+        setTestResult({ ...result, message: `[${i + 1}/${keys.length}] ${PROVIDER_MAP[provider].name}: ${result.message}` });
+
+        // 1 second between requests to stay polite with provider rate limits
         if (i < keys.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
-      
-      // Show summary message after all tests complete
-      setTestResult({
-        success: true,
-        message: `Successfully tested ${keys.length} API key${keys.length > 1 ? 's' : ''}. Results shown in history.`,
-      });
+
+      const tested = valid + invalid;
+      const parts = [`Tested ${tested} of ${keys.length} key${keys.length > 1 ? 's' : ''}: ${valid} valid, ${invalid} invalid.`];
+      if (undetected.length > 0) {
+        parts.push(
+          `${undetected.length} key${undetected.length > 1 ? 's were' : ' was'} not recognized and skipped (${undetected.map(maskKey).join(', ')}) — test ${undetected.length > 1 ? 'them' : 'it'} in Single mode and pick the provider manually.`
+        );
+      }
+      parts.push('Results shown in history.');
+      setTestResult({ success: invalid === 0 && undetected.length === 0, message: parts.join(' ') });
     } finally {
       setIsLoading(false);
     }
@@ -109,8 +129,8 @@ export function KeyInput() {
       return;
     }
 
-    let provider = selectedProvider;
-    
+    const provider = selectedProvider;
+
     if (!provider || !apiKey) {
       setTestResult({
         success: false,
@@ -131,7 +151,7 @@ export function KeyInput() {
   return (
     <div className="w-full max-w-2xl mx-auto space-y-2 text-center">
       {/* API Key Input Section */}
-      <div data-webmcp-tool="test_api_key" data-webmcp-description="Test and validate API keys for 19+ providers including OpenAI, Anthropic, Google Gemini, DeepSeek, and more" className="space-y-1.5 p-3 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-700 rounded-xl shadow-xl backdrop-blur-sm">
+      <div data-webmcp-tool="test_api_key" data-webmcp-description="Test and validate API keys for OpenAI, Anthropic, Google Gemini, DeepSeek, Stripe, GitHub and many more providers" className="space-y-1.5 p-3 bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-700 rounded-xl shadow-xl backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <label className="block text-xs font-bold text-gray-200 uppercase tracking-widest">
             API Key
@@ -189,12 +209,15 @@ export function KeyInput() {
                     }
                   }}
                   placeholder="Paste your API key..."
+                  autoComplete="off"
+                  spellCheck={false}
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition font-mono text-[11px]"
                 />
                 <button
                   onClick={() => setShowKey(!showKey)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition text-base bg-slate-800 px-1.5 py-0.5 rounded"
                   title={showKey ? 'Hide key' : 'Show key'}
+                  aria-label={showKey ? 'Hide key' : 'Show key'}
                 >
                   {showKey ? '👁️' : '👁️‍🗨️'}
                 </button>
@@ -241,6 +264,7 @@ export function KeyInput() {
               value={providerSearch}
               onChange={(e) => setProviderSearch(e.target.value)}
               placeholder="Search..."
+              aria-label="Search providers"
               className="max-w-[75px] px-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition text-xs"
             />
           </div>
@@ -263,6 +287,7 @@ export function KeyInput() {
                 key={provider.id}
                 onClick={() => !isDisabled && setSelectedProvider(provider.id)}
                 disabled={isDisabled}
+                title={provider.transport === 'proxy' ? `${provider.name} — tested via relay (blocks browser requests)` : provider.name}
                 className={`py-1 px-1.5 rounded-lg transition border-2 flex flex-col items-center justify-center gap-0 h-11 ${
                   isSelected
                     ? 'bg-[#f2f5f3] text-slate-900 opacity-100 shadow-lg border-blue-400'
@@ -271,20 +296,17 @@ export function KeyInput() {
                   isDisabled ? 'cursor-not-allowed opacity-50' : 'hover:shadow-md hover:scale-105 active:scale-95 transition-transform duration-200'
                 }`}
               >
-                <img 
-                  src={provider.logoUrl} 
-                  alt={provider.name}
-                  className="w-auto h-full object-contain max-h-[28px]"
-                />
+                <ProviderLogo provider={provider} className="w-auto h-full object-contain max-h-[28px]" />
                 <span className="text-[8px] leading-tight">{provider.name}</span>
               </button>
             );
           })}
         </div>
 
-        {autoDetect && detectedProvider === 'gemini' && apiKey.startsWith('AIza') && (
+        {selectedProvider && PROVIDER_MAP[selectedProvider]?.transport === 'proxy' && (
           <div className="text-[10px] text-amber-300 text-center">
-            If this is a Google Maps key, switch to Google Maps manually.
+            {PROVIDER_MAP[selectedProvider].name} blocks browser requests, so this test is relayed through our stateless
+            /api/test-provider function. The key is forwarded once and never logged or stored.
           </div>
         )}
       </div>
@@ -332,7 +354,7 @@ export function KeyInput() {
 
       {/* Test Result */}
       {testResult && (() => {
-        const endpointUrl = selectedProvider ? PROVIDER_MAP[selectedProvider]?.request('')?.url : null;
+        const endpointUrl = testResult.endpoint || (selectedProvider ? PROVIDER_MAP[selectedProvider]?.request('')?.url : null);
         const prettyResponse = (() => {
           if (!testResult.responseBody) return null;
           try {
@@ -345,7 +367,7 @@ export function KeyInput() {
         const responseTruncated = prettyResponse && prettyResponse.length > 200;
 
         return (
-          <div className="text-left">
+          <div className="text-left" role="status" aria-live="polite">
             <div
               className={`p-2.5 rounded-lg border-l-4 shadow-lg transition ${
                 testResult.success
@@ -354,13 +376,18 @@ export function KeyInput() {
               }`}
             >
               {/* Top row: provider badge + status + toggles */}
-              <p className="font-bold text-xs flex items-center gap-1.5">
-                {selectedProvider && PROVIDER_MAP[selectedProvider] && (
+              <p className="font-bold text-xs flex items-center gap-1.5 flex-wrap">
+                {!isBulkMode && selectedProvider && PROVIDER_MAP[selectedProvider] && (
                   <span className={`${PROVIDER_MAP[selectedProvider].color || 'bg-gray-600'} px-1.5 py-px rounded text-white font-bold shrink-0`} style={{fontSize: '9px'}}>
                     {PROVIDER_MAP[selectedProvider].name}
                   </span>
                 )}
                 {testResult.success ? '✅ Success' : '❌ Failed'}
+                {testResult.via === 'proxy' && (
+                  <span className="px-1 py-px rounded text-[9px] font-mono bg-amber-700/70 text-amber-100" title="Relayed through /api/test-provider">
+                    via relay
+                  </span>
+                )}
                 {endpointUrl && (
                   <button
                     onClick={() => setShowEndpoint(!showEndpoint)}
@@ -426,7 +453,7 @@ export function KeyInput() {
               )}
 
               {/* Latency */}
-              {testResult.latency && (
+              {testResult.latency != null && (
                 <p className="text-[11px] mt-1 opacity-90 flex items-center gap-1.5 font-mono">
                   <span>⏱️</span> <strong>{testResult.latency.toFixed(0)}ms</strong>
                 </p>

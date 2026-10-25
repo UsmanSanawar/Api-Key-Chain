@@ -1,70 +1,101 @@
 /**
- * Serverless function for testing API keys (single endpoint)
- * Deployed to Vercel as a serverless function
+ * Stateless relay for providers that block browser (CORS) requests.
+ *
+ * Forwards one test request to the provider and returns the classified result.
+ * The API key is never logged or stored. Only same-origin browser requests are
+ * accepted (plus any origins listed in ALLOWED_ORIGINS, comma-separated).
  */
 
-import type { ProviderType } from '../src/types';
-import { getProviderById } from '../shared/providers';
+import { getProviderById, runProviderTest } from '../shared/providers';
 
-export default async function handler(request: any): Promise<any> {
+const RATE_LIMIT = 30;
+const RATE_WINDOW_MS = 60_000;
+const MAX_KEY_LENGTH = 1024;
+const UPSTREAM_TIMEOUT_MS = 10_000;
+
+// Best-effort, per-instance limiter — enough to stop casual abuse of the relay.
+const hits = new Map<string, { count: number; resetAt: number }>();
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  });
+}
+
+function isAllowedOrigin(request: Request): boolean {
+  const origin = request.headers.get('origin');
+  if (!origin) return false;
+  const allowed = (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  if (allowed.includes(origin)) return true;
+  try {
+    return new URL(origin).host === new URL(request.url).host;
+  } catch {
+    return false;
+  }
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = hits.get(ip);
+  if (!entry || entry.resetAt <= now) {
+    if (hits.size > 10_000) hits.clear();
+    hits.set(ip, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return false;
+  }
+  entry.count++;
+  return entry.count > RATE_LIMIT;
+}
+
+export async function handleTestProvider(request: Request): Promise<Response> {
   if (request.method !== 'POST') {
-    return new Response(
-      JSON.stringify({ success: false, message: 'Method not allowed' }),
-      { status: 405, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-    );
+    return json({ success: false, message: 'Method not allowed' }, 405);
+  }
+  if (!isAllowedOrigin(request)) {
+    return json({ success: false, message: 'Origin not allowed' }, 403);
+  }
+
+  const ip = (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown';
+  if (isRateLimited(ip)) {
+    return json({ success: false, message: 'Too many tests from this IP — wait a minute and try again.' }, 429);
+  }
+
+  let body: { apiKey?: unknown; provider?: unknown };
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return json({ success: false, message: 'Invalid JSON body' }, 400);
+  }
+
+  const { apiKey, provider } = body ?? {};
+  if (typeof apiKey !== 'string' || !apiKey || apiKey.length > MAX_KEY_LENGTH || typeof provider !== 'string') {
+    return json({ success: false, message: 'Provider and API key required' }, 400);
+  }
+
+  const meta = getProviderById(provider);
+  if (!meta) {
+    return json({ success: false, message: 'Provider not supported yet' }, 400);
   }
 
   try {
-    const body = typeof request.body === 'string' ? JSON.parse(request.body) : request.body;
-    const { apiKey, provider } = body || {};
-
-    if (!apiKey || !provider) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Provider and API key required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-      );
-    }
-
-    const meta = getProviderById(provider as ProviderType);
-    if (!meta) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Provider not supported yet' }),
-        { status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-      );
-    }
-    const requestInfo = meta.request(apiKey);
-
-    const startTime = Date.now();
-    const response = await fetch(requestInfo.url, {
-      method: 'GET',
-      headers: requestInfo.headers,
-    });
-
-    const latency = Date.now() - startTime;
-
-    if (response.ok) {
-      return new Response(
-        JSON.stringify({ success: true, message: 'API key is valid', latency, status: response.status }),
-        { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-      );
-    }
-
-    let message = `API error: ${response.status} ${response.statusText}`;
-    let success = response.status === 429;
-
-    if (response.status === 401) message = 'Invalid or expired API key (401 Unauthorized)';
-    else if (response.status === 403) message = 'API key forbidden (403 Forbidden)';
-    else if (response.status === 429) message = 'API key is valid (rate limited)';
-    else if (response.status === 400) message = 'Invalid API key format (400 Bad Request)';
-
-    return new Response(
-      JSON.stringify({ success, message, latency, status: response.status }),
-      { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+    const result = await runProviderTest(meta, apiKey.trim(), (req) =>
+      fetch(req.url, {
+        method: req.method ?? 'GET',
+        headers: req.headers,
+        body: req.body,
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      })
     );
+    return json(result);
   } catch (error) {
-    return new Response(
-      JSON.stringify({ success: false, message: `Network error: ${error instanceof Error ? error.message : 'Unknown error'}` }),
-      { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
-    );
+    const message = error instanceof Error && error.name === 'TimeoutError'
+      ? `Provider did not respond within ${UPSTREAM_TIMEOUT_MS / 1000}s`
+      : 'Could not reach the provider';
+    return json({ success: false, message: `Network error: ${message}`, endpoint: meta.request('').url }, 502);
   }
 }
+
+export default { fetch: handleTestProvider };

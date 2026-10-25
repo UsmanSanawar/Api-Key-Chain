@@ -27,7 +27,7 @@ function App() {
 
           <div className="flex items-center justify-center gap-2 mt-2">
             <span className="text-lg">🔒</span>
-            <h2 className="text-sm font-bold text-white">Your Keys Never Leave Your Browser</h2>
+            <h2 className="text-sm font-bold text-white">Your Keys Are Never Stored</h2>
           </div>
 
           <p className="text-gray-400 text-xs max-w-xl mx-auto leading-relaxed mt-1">
@@ -35,9 +35,11 @@ function App() {
           </p>
 
           <p className="text-gray-500 text-[10px] max-w-lg mx-auto leading-relaxed mt-2">
-            When you test an API key, it is sent directly from your browser to the
-            respective provider&rsquo;s API endpoint. No intermediary server processes
-            your key. Nothing is logged. Nothing is stored on our servers.
+            Most providers are tested straight from your browser to the provider&rsquo;s API.
+            A few providers block browser requests (CORS) — those tests, or a direct test that
+            fails, are relayed through a stateless serverless function that forwards the request
+            once and never logs or stores your key. Every result shows whether it went direct or
+            via the relay. Full keys are never written to your browser storage either.
           </p>
 
           <div className="mt-2 flex flex-wrap justify-center gap-1.5">

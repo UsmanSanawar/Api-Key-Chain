@@ -76,7 +76,7 @@ export function ResultsHistory() {
       <div className="space-y-1.5">
         {results.map((result) => {
           const isCopied = copiedId === result.id;
-          const endpointUrl = PROVIDER_MAP[result.provider]?.request('')?.url;
+          const endpointUrl = result.endpoint || PROVIDER_MAP[result.provider]?.request('')?.url;
           const prettyResponse = prettyPrint(result.responseBody);
           const exp = expanded[result.id] || {};
           const responseTruncated = prettyResponse && prettyResponse.length > 200;
@@ -101,6 +101,11 @@ export function ResultsHistory() {
                     <span className="text-[11px] font-bold shrink-0">
                       {result.success ? '✅' : '❌'}
                     </span>
+                    {result.via === 'proxy' && (
+                      <span className="px-1 py-px rounded text-[9px] font-mono bg-amber-700/70 text-amber-100 shrink-0" title="Relayed through /api/test-provider">
+                        relay
+                      </span>
+                    )}
 
                     {/* Toggle pills */}
                     {endpointUrl && (
@@ -149,7 +154,7 @@ export function ResultsHistory() {
                           ? 'bg-green-600 text-white'
                           : 'bg-slate-600 hover:bg-slate-500 text-gray-300 hover:text-white'
                       }`}
-                      title={result.fullKey ? 'Copy full key' : 'Copy key preview'}
+                      title={result.fullKey ? 'Copy full key (available this session only)' : 'Copy key preview — full keys are not saved in history'}
                     >
                       {isCopied ? '✓ Copied' : '📋 Copy'}
                     </button>
@@ -158,7 +163,7 @@ export function ResultsHistory() {
 
                 {/* Right: latency + time */}
                 <div className="text-right shrink-0 flex items-center gap-2">
-                  {result.latency && (
+                  {result.latency != null && (
                     <span className="font-mono font-bold text-[10px] opacity-90">
                       {result.latency.toFixed(0)}ms
                     </span>

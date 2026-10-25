@@ -1,112 +1,65 @@
-import type { ProviderType } from '../types';
+import type { TestVia } from '../types';
 import { fetchWithTimeout } from '../utils/fetch';
-import { getProviderById } from '../../shared/providers';
+import { getProviderById, runProviderTest } from '../../shared/providers';
+import type { ProviderTestResult } from '../../shared/providers';
 
-type TestResult = { success: boolean; message: string; latency?: number; responseBody?: string };
+export type TestResult = ProviderTestResult & { via: TestVia };
 
-export async function testProvider(provider: string, apiKey: string): Promise<TestResult> {
-  const startTime = Date.now();
+const RELAY_URL = '/api/test-provider';
 
+/**
+ * Relay the test through the stateless serverless function. Returns null when
+ * the relay isn't deployed (e.g. static hosting) so callers can explain why.
+ */
+async function testViaRelay(provider: string, apiKey: string): Promise<TestResult | null> {
   try {
-    const edgeResponse = await fetch('/api/test-provider', {
+    const response = await fetch(RELAY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ provider, apiKey }),
     });
-
-    if (edgeResponse.ok) {
-      const result = await edgeResponse.json();
-      return { success: result.success, message: result.message, latency: result.latency, responseBody: JSON.stringify(result) };
-    }
-  } catch (edgeError) {
-    console.warn('[Provider] Edge Function failed, falling back to direct API call:', edgeError);
+    if (!(response.headers.get('content-type') || '').includes('application/json')) return null;
+    const result = await response.json();
+    if (typeof result?.success !== 'boolean') return null;
+    return { ...result, via: 'proxy' };
+  } catch {
+    return null;
   }
+}
 
-  const meta = getProviderById(provider as ProviderType);
+export async function testProvider(provider: string, apiKey: string): Promise<TestResult> {
+  const meta = getProviderById(provider);
   if (!meta) {
-    return { success: false, message: 'Provider not supported yet' };
+    return { success: false, message: 'Provider not supported yet', endpoint: '', via: 'direct' };
+  }
+  const endpoint = meta.request('').url;
+
+  if (meta.transport === 'direct') {
+    try {
+      const result = await runProviderTest(meta, apiKey, (request) =>
+        fetchWithTimeout(request.url, {
+          method: request.method ?? 'GET',
+          headers: request.headers,
+          body: request.body,
+          timeout: 10000,
+        })
+      );
+      return { ...result, via: 'direct' };
+    } catch (error) {
+      // Browser request blocked (CORS, extension, network) — try the relay before giving up.
+      const relayed = await testViaRelay(provider, apiKey);
+      if (relayed) return relayed;
+      const errMsg = error instanceof Error ? error.message : 'Unknown error';
+      return { success: false, message: `Network error: ${errMsg}`, endpoint, responseBody: errMsg, via: 'direct' };
+    }
   }
 
-  // Pre-validate: if the key matches the provider's expected format pattern,
-  // any subsequent API error means the key is incorrect (not a format issue).
-  const formatValid = meta.detectPattern ? meta.detectPattern.test(apiKey) : true;
-
-  const request = meta.request(apiKey);
-
-  try {
-    const response = await fetchWithTimeout(request.url, {
-      method: 'GET',
-      headers: request.headers,
-      timeout: 10000,
-    });
-
-    const latency = Date.now() - startTime;
-
-    // Read response body for debugging (may be empty due to CORS)
-    const rawBody = await response.text().catch(() => '');
-    let parsedBody: Record<string, unknown> | null = null;
-    try { parsedBody = JSON.parse(rawBody); } catch { /* not JSON */ }
-
-    if (response.ok) {
-      return { success: true, message: 'API key is valid', latency, responseBody: rawBody };
-    }
-
-    // Extract error detail from response body if available
-    const errorDetail = (parsedBody as Record<string, unknown>)?.error;
-    const errorMessage = typeof errorDetail === 'string'
-      ? errorDetail
-      : typeof errorDetail === 'object' && errorDetail !== null
-        ? (errorDetail as Record<string, unknown>).message as string || ''
-        : '';
-
-    // Determine if this is a format issue or an incorrect key:
-    // 1. If response body explicitly mentions invalid key → incorrect key
-    // 2. If key matches the provider's expected format → incorrect key (format is fine)
-    // 3. If key doesn't match format and no clear signal → format issue
-    const bodyHintsIncorrect = errorMessage.toLowerCase().includes('api key not valid')
-      || errorMessage.toLowerCase().includes('invalid api key')
-      || errorMessage.toLowerCase().includes('invalid key')
-      || errorMessage.toLowerCase().includes('api_key_invalid')
-      || errorMessage.toLowerCase().includes('unauthorized')
-      || errorMessage.toLowerCase().includes('not found')
-      || errorMessage.toLowerCase().includes('denied');
-
-    const bodyHintsFormat = errorMessage.toLowerCase().includes('malformed')
-      || errorMessage.toLowerCase().includes('format')
-      || errorMessage.toLowerCase().includes('parse error');
-
-    if (response.status === 401) {
-      return { success: false, message: `Invalid or incorrect API key (401 Unauthorized)${errorMessage ? ': ' + errorMessage : ''}`, latency, responseBody: rawBody };
-    }
-
-    if (response.status === 403) {
-      return { success: false, message: `Invalid or incorrect API key (403 Forbidden)${errorMessage ? ': ' + errorMessage : ''}`, latency, responseBody: rawBody };
-    }
-
-    if (response.status === 429) {
-      return { success: true, message: 'API key is valid (rate limited)', latency, responseBody: rawBody };
-    }
-
-    if (response.status === 400) {
-      // Use body hints if available, otherwise fall back to format pattern check
-      if (bodyHintsFormat && !bodyHintsIncorrect) {
-        return { success: false, message: `Invalid API key format (400)${errorMessage ? ': ' + errorMessage : ''}`, latency, responseBody: rawBody };
-      }
-      if (bodyHintsIncorrect || formatValid) {
-        // Key format matches but API rejected it → incorrect key
-        return { success: false, message: `Invalid or incorrect API key (400 Bad Request)${errorMessage ? ': ' + errorMessage : ''}`, latency, responseBody: rawBody };
-      }
-      // Key doesn't match expected format and no body hints
-      return { success: false, message: `Invalid API key format (400)${errorMessage ? ': ' + errorMessage : ''}`, latency, responseBody: rawBody };
-    }
-
-    // Other error statuses
-    if (formatValid || bodyHintsIncorrect) {
-      return { success: false, message: `Invalid or incorrect API key (${response.status})${errorMessage ? ': ' + errorMessage : ''}`, latency, responseBody: rawBody };
-    }
-    return { success: false, message: `API error: ${response.status} ${response.statusText}${errorMessage ? ' - ' + errorMessage : ''}`, latency, responseBody: rawBody };
-  } catch (error) {
-    const errMsg = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, message: `Network error: ${errMsg}`, responseBody: errMsg };
-  }
+  const relayed = await testViaRelay(provider, apiKey);
+  if (relayed) return relayed;
+  return {
+    success: false,
+    message: `${meta.name} blocks direct browser requests (CORS) and the test relay (${RELAY_URL}) is not available on this deployment.`,
+    endpoint,
+    via: 'proxy',
+  };
 }

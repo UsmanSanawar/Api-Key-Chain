@@ -1,7 +1,7 @@
 {
   "name": "api-key-chain",
-  "description": "Instantly validate and test API keys for 19+ providers — OpenAI, Anthropic, Google Gemini, DeepSeek, Stripe, GitHub, and more. Open source, secure, and free.",
-  "private": false,
+  "description": "Instantly validate and test API keys for OpenAI, Anthropic, Google Gemini, DeepSeek, Stripe, GitHub and many more providers. Open source, secure, and free.",
+  "private": true,
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
@@ -41,13 +41,6 @@
     "validation",
     "typescript",
     "react"
-  ],
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
   ],
   "scripts": {
     "dev": "vite",
