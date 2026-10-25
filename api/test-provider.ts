@@ -6,7 +6,7 @@
  * accepted (plus any origins listed in ALLOWED_ORIGINS, comma-separated).
  */
 
-import { getProviderById, runProviderTest } from '../shared/providers';
+import { getProviderById, runProviderTest } from '../shared/providers.js';
 
 const RATE_LIMIT = 30;
 const RATE_WINDOW_MS = 60_000;
