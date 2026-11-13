@@ -29,7 +29,18 @@ export function ProviderLogo({ provider, className }: { provider: ProviderMeta; 
   return <img src={provider.logoUrl} alt={provider.name} loading="lazy" className={className} />;
 }
 
-export function KeyInput() {
+export interface KeyInputProps {
+  /**
+   * Provider this tester is for (e.g. on a provider landing page).
+   * Auto-detect stays on: a key matching this provider's pattern, or with no
+   * detectable pattern, is tested against it; a key that clearly belongs to
+   * another provider switches to that provider. The provider grid starts
+   * collapsed. Omit for the general tester.
+   */
+  defaultProvider?: ProviderType;
+}
+
+export function KeyInput({ defaultProvider }: KeyInputProps = {}) {
   const {
     apiKey,
     detectedProvider,
@@ -39,7 +50,9 @@ export function KeyInput() {
   const { test } = useApiTest();
   const [isLoading, setIsLoading] = useState(false);
   const [testResult, setTestResult] = useState<DisplayResult | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState<ProviderType | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<ProviderType | null>(defaultProvider ?? null);
+  const [showProviderGrid, setShowProviderGrid] = useState(!defaultProvider);
+  const defaultMeta = defaultProvider ? PROVIDER_MAP[defaultProvider] : undefined;
   const [showKey, setShowKey] = useState(false);
   const [autoDetect, setAutoDetect] = useState(true);
   const [providerSearch, setProviderSearch] = useState('');
@@ -57,13 +70,15 @@ export function KeyInput() {
   }, [isBulkMode]);
 
   useEffect(() => {
-    if (autoDetect && detectedProvider) {
-      setSelectedProvider(detectedProvider);
-    } else if (autoDetect) {
-      setSelectedProvider(null);
+    if (!autoDetect) return; // In manual mode keep the user's selection.
+    if (defaultProvider) {
+      const pattern = PROVIDER_MAP[defaultProvider]?.detectPattern ?? null;
+      const fitsDefault = !apiKey || pattern === null || pattern.test(apiKey);
+      setSelectedProvider(fitsDefault ? defaultProvider : detectedProvider ?? defaultProvider);
+      return;
     }
-    // In manual mode keep the user's selection.
-  }, [detectedProvider, autoDetect]);
+    setSelectedProvider(detectedProvider ?? null);
+  }, [detectedProvider, autoDetect, apiKey, defaultProvider]);
 
   // Parse bulk keys: support both newline and comma separated
   const parseBulkKeys = (input: string): string[] => {
@@ -208,7 +223,7 @@ export function KeyInput() {
                       setBulkKeys(pasted);
                     }
                   }}
-                  placeholder="Paste your API key..."
+                  placeholder={defaultMeta ? `Paste your ${defaultMeta.name} API key...` : 'Paste your API key...'}
                   autoComplete="off"
                   spellCheck={false}
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition font-mono text-[11px]"
@@ -270,6 +285,30 @@ export function KeyInput() {
           </div>
         </div>
 
+        {!showProviderGrid && (
+          <div className="flex items-center justify-center gap-2 text-[11px] text-gray-300">
+            {selectedProvider && PROVIDER_MAP[selectedProvider] ? (
+              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#f2f5f3] text-slate-900 border-2 border-blue-400">
+                <ProviderLogo provider={PROVIDER_MAP[selectedProvider]} className="w-auto h-4 object-contain" />
+                <span className="font-semibold">{PROVIDER_MAP[selectedProvider].name}</span>
+              </span>
+            ) : (
+              <span>No provider selected</span>
+            )}
+            <button
+              onClick={() => {
+                setShowProviderGrid(true);
+                // Grid buttons only work in manual mode (bulk mode always auto-detects).
+                if (!isBulkMode) setAutoDetect(false);
+              }}
+              className="text-blue-300 hover:text-blue-200 underline underline-offset-2 transition"
+            >
+              Change provider
+            </button>
+          </div>
+        )}
+
+        {showProviderGrid && (
         <div className="grid grid-cols-5 gap-1.5">
           {PROVIDERS_SORTED.filter((provider) => {
             const query = providerSearch.trim().toLowerCase();
@@ -302,6 +341,7 @@ export function KeyInput() {
             );
           })}
         </div>
+        )}
 
         {selectedProvider && PROVIDER_MAP[selectedProvider]?.transport === 'proxy' && (
           <div className="text-[10px] text-amber-300 text-center">
