@@ -336,7 +336,13 @@ export function KeyInput({ defaultProvider, defaultMode = 'single' }: KeyInputPr
           </div>
         </div>
 
-        {!showProviderGrid && (
+        {isBulkMode && (
+          <p className="text-[11px] text-gray-400 text-center">
+            In bulk mode the provider is detected for each key (or from the variable name in a .env file).
+          </p>
+        )}
+
+        {!isBulkMode && !showProviderGrid && (
           <div className="flex items-center justify-center gap-2 text-[11px] text-gray-300">
             {selectedProvider && PROVIDER_MAP[selectedProvider] ? (
               <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#f2f5f3] text-slate-900 border-2 border-blue-400">
@@ -359,7 +365,7 @@ export function KeyInput({ defaultProvider, defaultMode = 'single' }: KeyInputPr
           </div>
         )}
 
-        {showProviderGrid && (
+        {!isBulkMode && showProviderGrid && (
         <div className="grid grid-cols-5 gap-1.5">
           {PROVIDERS_SORTED.filter((provider) => {
             const query = providerSearch.trim().toLowerCase();
