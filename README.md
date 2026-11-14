@@ -34,7 +34,8 @@
 | 🌐 **43 Providers** | **LLMs:** OpenAI, Anthropic, Gemini, DeepSeek, xAI, Mistral, Cohere, Perplexity, GLM, Kimi, Qwen, Doubao · **Inference:** Groq, OpenRouter, Together, Hugging Face, Fireworks, Cerebras, Nebius, DeepInfra, Hyperbolic, Novita, AI21, Replicate · **Audio/vector:** ElevenLabs, AssemblyAI, Deepgram, Pinecone · **Email/messaging:** SendGrid, Mailgun, Brevo, Postmark, Resend, Twilio, Slack · **Payments & dev:** Stripe, GitHub, GitLab, Vercel, Netlify, DigitalOcean, Cloudflare, Notion |
 | 🔍 **Auto-Detect** | Smart pattern matching identifies your provider — paste a key, we figure out which one |
 | ⚡ **Instant Validation** | Real API calls with status codes, latency (ms), and full response body |
-| 📦 **Bulk Testing** | Paste multiple keys (comma or newline separated) — auto-switches to bulk mode |
+| 📦 **Bulk Testing** | Paste multiple keys (comma or newline separated) — auto-switches to bulk mode, with a result per key |
+| 📄 **.env Checker** | Paste a whole `.env` file — every value recognised as an API key (by prefix or by variable name, e.g. `MISTRAL_API_KEY`) is tested; URLs, passwords and other values are ignored and never sent |
 | 🔗 **Endpoint Viewer** | Toggle to see the exact API URL being tested |
 | 📋 **Response Viewer** | Pretty-printed JSON response with copy-to-clipboard and expand/collapse |
 | 📊 **Test History** | Timestamped results persist in localStorage across refreshes |

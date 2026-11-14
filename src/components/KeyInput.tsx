@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useKeyInput } from '../hooks/useKeyInput';
 import { useApiTest } from '../hooks/useApiTest';
 import { detectProvider } from '../utils/detection';
+import { looksLikeEnvFile, parseEnvFile } from '../utils/envParser';
 import { PROVIDERS_SORTED, PROVIDER_MAP } from '../../shared/providers';
 import type { ProviderMeta } from '../../shared/providers';
 import type { ProviderType, TestVia } from '../types';
@@ -13,6 +14,15 @@ type DisplayResult = {
   responseBody?: string;
   endpoint?: string;
   via?: TestVia;
+};
+
+type BulkRow = {
+  /** Variable name (.env mode) or masked key (list mode). */
+  label: string;
+  provider: ProviderType | null;
+  state: 'pending' | 'testing' | 'valid' | 'invalid' | 'skipped';
+  detail: string;
+  latency?: number;
 };
 
 const maskKey = (key: string) => (key.length > 10 ? `${key.slice(0, 6)}…${key.slice(-4)}` : '••••');
@@ -38,9 +48,11 @@ export interface KeyInputProps {
    * collapsed. Omit for the general tester.
    */
   defaultProvider?: ProviderType;
+  /** Start in bulk mode (e.g. on a ".env checker" page). Defaults to single. */
+  defaultMode?: 'single' | 'bulk';
 }
 
-export function KeyInput({ defaultProvider }: KeyInputProps = {}) {
+export function KeyInput({ defaultProvider, defaultMode = 'single' }: KeyInputProps = {}) {
   const {
     apiKey,
     detectedProvider,
@@ -56,7 +68,8 @@ export function KeyInput({ defaultProvider }: KeyInputProps = {}) {
   const [showKey, setShowKey] = useState(false);
   const [autoDetect, setAutoDetect] = useState(true);
   const [providerSearch, setProviderSearch] = useState('');
-  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [isBulkMode, setIsBulkMode] = useState(defaultMode === 'bulk');
+  const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
   const [bulkKeys, setBulkKeys] = useState('');
   const [showEndpoint, setShowEndpoint] = useState(false);
   const [showResponse, setShowResponse] = useState(false);
@@ -89,11 +102,44 @@ export function KeyInput({ defaultProvider }: KeyInputProps = {}) {
   };
 
   const handleBulkTest = async () => {
-    const keys = parseBulkKeys(bulkKeys);
-    if (keys.length === 0) {
+    // Build the work list: a .env file (NAME=value lines) or a plain list of keys.
+    const isEnv = looksLikeEnvFile(bulkKeys);
+    const jobs: { label: string; key: string; provider: ProviderType | null; skip?: string }[] = isEnv
+      ? parseEnvFile(bulkKeys).map((e) => ({ label: e.name, key: e.value, provider: e.provider, skip: e.skipReason }))
+      : parseBulkKeys(bulkKeys).map((key) => {
+          const provider = detectProvider(key);
+          return {
+            label: maskKey(key),
+            key,
+            provider,
+            skip: provider ? undefined : 'provider not recognised: test it in Single mode and pick the provider',
+          };
+        });
+
+    if (jobs.length === 0) {
+      setBulkRows([]);
       setTestResult({
         success: false,
-        message: 'Please provide at least one API key',
+        message: isEnv ? 'No variables found in the pasted .env content' : 'Please provide at least one API key',
+      });
+      return;
+    }
+
+    const rows: BulkRow[] = jobs.map((j) => ({
+      label: j.label,
+      provider: j.provider,
+      state: j.provider ? 'pending' : 'skipped',
+      detail: j.provider ? 'Waiting…' : j.skip ?? 'skipped',
+    }));
+    setBulkRows([...rows]);
+
+    const toTest = jobs.map((j, index) => ({ ...j, index })).filter((j) => j.provider);
+    if (toTest.length === 0) {
+      setTestResult({
+        success: false,
+        message: isEnv
+          ? `No API keys recognised in ${jobs.length} variable${jobs.length > 1 ? 's' : ''}. Nothing was sent anywhere.`
+          : 'No keys were recognised. Test them in Single mode and pick the provider manually.',
       });
       return;
     }
@@ -102,37 +148,42 @@ export function KeyInput({ defaultProvider }: KeyInputProps = {}) {
     setTestResult(null);
     let valid = 0;
     let invalid = 0;
-    const undetected: string[] = [];
 
     try {
-      for (let i = 0; i < keys.length; i++) {
-        const key = keys[i];
-        const provider = detectProvider(key);
-        if (!provider) {
-          undetected.push(key);
-          continue;
-        }
+      for (let n = 0; n < toTest.length; n++) {
+        const job = toTest[n];
+        const provider = job.provider as ProviderType;
+        rows[job.index] = { ...rows[job.index], state: 'testing', detail: 'Testing…' };
+        setBulkRows([...rows]);
 
-        const result = await test(provider, key);
+        const result = await test(provider, job.key);
         if (result.success) valid++;
         else invalid++;
-        setTestResult({ ...result, message: `[${i + 1}/${keys.length}] ${PROVIDER_MAP[provider].name}: ${result.message}` });
+        rows[job.index] = {
+          ...rows[job.index],
+          state: result.success ? 'valid' : 'invalid',
+          detail: result.message,
+          latency: result.latency,
+        };
+        setBulkRows([...rows]);
+        setTestResult({ ...result, message: `[${n + 1}/${toTest.length}] ${job.label} (${PROVIDER_MAP[provider].name}): ${result.message}` });
 
         // 1 second between requests to stay polite with provider rate limits
-        if (i < keys.length - 1) {
+        if (n < toTest.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
 
-      const tested = valid + invalid;
-      const parts = [`Tested ${tested} of ${keys.length} key${keys.length > 1 ? 's' : ''}: ${valid} valid, ${invalid} invalid.`];
-      if (undetected.length > 0) {
+      const skipped = jobs.length - toTest.length;
+      const parts = [`Tested ${toTest.length} key${toTest.length > 1 ? 's' : ''}: ${valid} valid, ${invalid} invalid.`];
+      if (skipped > 0) {
         parts.push(
-          `${undetected.length} key${undetected.length > 1 ? 's were' : ' was'} not recognized and skipped (${undetected.map(maskKey).join(', ')}) — test ${undetected.length > 1 ? 'them' : 'it'} in Single mode and pick the provider manually.`
+          isEnv
+            ? `${skipped} other variable${skipped > 1 ? 's were' : ' was'} not an API key we can test and ${skipped > 1 ? 'were' : 'was'} not sent anywhere.`
+            : `${skipped} key${skipped > 1 ? 's were' : ' was'} not recognised and skipped.`
         );
       }
-      parts.push('Results shown in history.');
-      setTestResult({ success: invalid === 0 && undetected.length === 0, message: parts.join(' ') });
+      setTestResult({ success: invalid === 0, message: parts.join(' ') });
     } finally {
       setIsLoading(false);
     }
@@ -198,8 +249,8 @@ export function KeyInput({ defaultProvider }: KeyInputProps = {}) {
               <textarea
                 value={bulkKeys}
                 onChange={(e) => setBulkKeys(e.target.value)}
-                placeholder="Insert/paste API keys each in new line OR separated by comma"
-                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition font-mono text-[11px] min-h-[70px] resize-none"
+                placeholder={'Paste API keys (one per line or comma-separated), or a whole .env file:\nOPENAI_API_KEY=sk-...\nMISTRAL_API_KEY=...'}
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition font-mono text-[11px] min-h-[90px] resize-y"
               />
             ) : (
               <>
@@ -370,6 +421,7 @@ export function KeyInput({ defaultProvider }: KeyInputProps = {}) {
           onClick={() => {
             reset();
             setBulkKeys('');
+            setBulkRows([]);
             setTestResult(null);
             setShowKey(false);
             setShowEndpoint(false);
@@ -390,6 +442,11 @@ export function KeyInput({ defaultProvider }: KeyInputProps = {}) {
           <span className="text-indigo-200">• 👁️ to show/hide</span>
           {isBulkMode && <span className="text-indigo-200">• 1s delay between tests</span>}
         </div>
+        {isBulkMode && (
+          <p className="text-indigo-200/80 mt-1 text-center">
+            .env files: only values recognised as API keys are tested. Database URLs, passwords and other values are ignored and never sent anywhere.
+          </p>
+        )}
       </div>
 
       {/* Test Result */}
@@ -502,6 +559,33 @@ export function KeyInput({ defaultProvider }: KeyInputProps = {}) {
           </div>
         );
       })()}
+
+      {/* Bulk / .env results, one row per key or variable */}
+      {isBulkMode && bulkRows.length > 0 && (
+        <div className="text-left rounded-lg border border-slate-700 bg-slate-900/70 overflow-hidden">
+          <ul className="divide-y divide-slate-800 max-h-80 overflow-y-auto">
+            {bulkRows.map((row, i) => (
+              <li key={`${row.label}-${i}`} className="flex items-start gap-2 px-2.5 py-1.5 text-[11px]">
+                <span className="shrink-0 w-4 text-center" aria-hidden="true">
+                  {row.state === 'valid' ? '✅' : row.state === 'invalid' ? '❌' : row.state === 'testing' ? '⏳' : row.state === 'pending' ? '•' : '–'}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className={`font-mono break-all ${row.state === 'skipped' ? 'text-gray-500' : 'text-gray-100'}`}>{row.label}</span>
+                  {row.provider && PROVIDER_MAP[row.provider] && (
+                    <span className={`${PROVIDER_MAP[row.provider].color || 'bg-gray-600'} ml-1.5 px-1.5 py-px rounded text-white font-bold`} style={{ fontSize: '9px' }}>
+                      {PROVIDER_MAP[row.provider].name}
+                    </span>
+                  )}
+                  <span className={`block ${row.state === 'invalid' ? 'text-red-300' : row.state === 'valid' ? 'text-green-300' : 'text-gray-500'}`}>
+                    {row.detail}
+                    {row.latency != null && <span className="font-mono text-gray-400"> · {row.latency.toFixed(0)}ms</span>}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }
