@@ -46,7 +46,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:cli": "esbuild cli/index.ts --bundle --platform=node --format=esm --target=node18 --outfile=bin/apikeychain.mjs --banner:js=\"#!/usr/bin/env node\" --log-level=warning"
   },
   "dependencies": {
     "react": "^19.2.0",
@@ -70,5 +71,8 @@
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4"
+  },
+  "bin": {
+    "apikeychain": "bin/apikeychain.mjs"
   }
 }

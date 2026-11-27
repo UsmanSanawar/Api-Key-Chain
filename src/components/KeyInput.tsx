@@ -4,7 +4,7 @@ import { useApiTest } from '../hooks/useApiTest';
 import { detectProvider } from '../utils/detection';
 import { looksLikeEnvFile, parseEnvFile } from '../utils/envParser';
 import { PROVIDERS_SORTED, PROVIDER_MAP } from '../../shared/providers';
-import type { ProviderMeta } from '../../shared/providers';
+import type { KeyDetail, ProviderMeta } from '../../shared/providers';
 import type { ProviderType, TestVia } from '../types';
 
 type DisplayResult = {
@@ -14,6 +14,8 @@ type DisplayResult = {
   responseBody?: string;
   endpoint?: string;
   via?: TestVia;
+  /** Account, scopes, credit… read from the provider's response for a valid key. */
+  details?: KeyDetail[];
 };
 
 type BulkRow = {
@@ -521,6 +523,18 @@ export function KeyInput({ defaultProvider, defaultMode = 'single' }: KeyInputPr
 
               {/* Message */}
               <p className="text-[11px] mt-1 leading-relaxed">{testResult.message}</p>
+
+              {/* What the provider says about this key (account, scopes, credit…) */}
+              {testResult.success && testResult.details && testResult.details.length > 0 && (
+                <dl className="mt-1.5 grid grid-cols-[auto,1fr] gap-x-3 gap-y-0.5 bg-black/20 rounded px-2 py-1.5 text-[10px]">
+                  {testResult.details.map((d) => (
+                    <div key={d.label} className="contents">
+                      <dt className="text-green-300/80">{d.label}</dt>
+                      <dd className="text-green-50 break-all">{d.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
 
               {/* Expanded: Endpoint */}
               {showEndpoint && endpointUrl && (

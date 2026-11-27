@@ -1,0 +1,39 @@
+name: 'Api Key Chain: check API keys'
+description: 'Fail the build when an API key in your .env file or CI secrets has stopped working. Keys are sent only to their own provider.'
+author: 'Api Key Chain'
+branding:
+  icon: 'key'
+  color: 'yellow'
+
+inputs:
+  file:
+    description: 'Path to a .env file to check. Leave empty and set `env-names` to check environment variables / secrets instead.'
+    required: false
+    default: ''
+  env-names:
+    description: 'Comma-separated environment variable names to check (e.g. OPENAI_API_KEY,STRIPE_SECRET_KEY). Pass the secrets to this step with `env:`.'
+    required: false
+    default: ''
+  strict:
+    description: 'Also fail on provider errors (timeouts, 5xx) and unrecognised keys.'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check API keys
+      shell: bash
+      env:
+        AKC_FILE: ${{ inputs.file }}
+        AKC_NAMES: ${{ inputs.env-names }}
+        AKC_STRICT: ${{ inputs.strict }}
+      run: |
+        args=()
+        if [ -n "$AKC_NAMES" ]; then
+          args+=(--env --only "$AKC_NAMES")
+        else
+          args+=("${AKC_FILE:-.env}")
+        fi
+        if [ "$AKC_STRICT" = "true" ]; then args+=(--strict); fi
+        node "$GITHUB_ACTION_PATH/bin/apikeychain.mjs" "${args[@]}"

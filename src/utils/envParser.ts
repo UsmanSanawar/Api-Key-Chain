@@ -94,6 +94,19 @@ const NAME_HINTS: [string, ProviderType][] = [
   ['NETLIFY', 'netlify'],
   ['DIGITALOCEAN', 'digitalocean'],
   ['CLOUDFLARE', 'cloudflare'],
+  ['DISCORD', 'discord'],
+  ['TELEGRAM', 'telegram'],
+  ['HUBSPOT', 'hubspot'],
+  ['MAILCHIMP', 'mailchimp'],
+  ['AIRTABLE', 'airtable'],
+  ['HEROKU', 'heroku'],
+  ['SENTRY', 'sentry'],
+  ['MAPBOX', 'mapbox'],
+  ['ASANA', 'asana'],
+  ['DATADOGAPIKEY', 'datadog'],
+  ['DDAPIKEY', 'datadog'],
+  ['POSTMANAPIKEY', 'postman'],
+  ['LEMONSQUEEZY', 'lemonsqueezy'],
 ];
 
 const WORD_HINTS: Record<string, ProviderType> = {
@@ -103,6 +116,10 @@ const WORD_HINTS: Record<string, ProviderType> = {
   GROK: 'xai',
   GLM: 'glm',
   PPLX: 'perplexity',
+  LINEAR: 'linear',
+  SQUARE: 'square',
+  RENDER: 'render',
+  NEON: 'neon',
 };
 
 /** Name words that mean "not a secret key" (or not one we can test alone). */

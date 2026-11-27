@@ -93,6 +93,43 @@ npm run dev
 
 ---
 
+## 💻 Command line & CI
+
+Check every API key in a `.env` file (or in environment variables) from your terminal or CI, and fail the build when one has stopped working. It uses the same provider list as the website, calls each provider directly (nothing goes anywhere else), and never prints full keys.
+
+```bash
+npm run build:cli            # bundles bin/apikeychain.mjs (no dependencies)
+node bin/apikeychain.mjs .env
+node bin/apikeychain.mjs --env --only OPENAI_API_KEY,STRIPE_SECRET_KEY
+```
+
+| Option | Meaning |
+|---|---|
+| `[file]` | `.env` file to check (default `.env`) |
+| `--env` | Check environment variables instead of a file |
+| `--only A,B` | Only these variable names |
+| `--json` | Machine-readable output |
+| `--strict` | Also fail on provider errors (timeouts, 5xx) and unrecognised keys |
+| `--quiet` | Only print problems |
+
+Exit codes: `0` all valid · `1` a key is invalid · `2` usage or file error.
+
+### GitHub Action
+
+```yaml
+- uses: actions/checkout@v4
+- uses: UsmanSanawar/Api-Key-Chain@main
+  with:
+    env-names: OPENAI_API_KEY,STRIPE_SECRET_KEY
+  env:
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+```
+
+Or check a committed example file with `with: { file: .env.ci }`. Add `strict: 'true'` to also fail on provider outages. The runner only needs Node 18+, which GitHub-hosted runners include.
+
+---
+
 ## 🌐 Supported Providers
 
 | Provider | Detect Pattern | Auto-Detect |
@@ -116,6 +153,10 @@ npm run dev
 | Stripe | `sk_test_...` / `sk_live_...` | ✅ High |
 | SendGrid | `SG....` | ✅ High |
 | GitHub | `ghp_...` / `github_pat_...` | ✅ High |
+
+Also supported (selected manually, or detected from the `.env` variable name): Replicate, ElevenLabs, AssemblyAI, Deepgram, Pinecone, Mailgun, Brevo, Postmark, Resend, Twilio, Slack, Notion, GitLab, Vercel, Netlify, DigitalOcean, Cloudflare, Fireworks, Cerebras, Nebius, DeepInfra, Hyperbolic, Novita, AI21, plus developer and business tools: **Discord (bot), Telegram (bot, auto-detected), HubSpot, Mailchimp (auto-detected), Airtable, Linear, Heroku, Sentry, Mapbox (auto-detected), Asana, Square, Datadog, Postman, Render, Neon, Lemon Squeezy**.
+
+For a valid key, the result also shows what the provider reports about it when available, such as the account, token scopes, key type (test/live, project, restricted), credit remaining or the number of models it can use. Nothing extra is requested, and email addresses are never shown.
 
 ---
 

@@ -49,7 +49,23 @@ export type ProviderType =
   | 'vercel'
   | 'netlify'
   | 'digitalocean'
-  | 'cloudflare';
+  | 'cloudflare'
+  | 'discord'
+  | 'telegram'
+  | 'hubspot'
+  | 'mailchimp'
+  | 'airtable'
+  | 'linear'
+  | 'heroku'
+  | 'sentry'
+  | 'mapbox'
+  | 'asana'
+  | 'square'
+  | 'datadog'
+  | 'postman'
+  | 'render'
+  | 'neon'
+  | 'lemonsqueezy';
 
 /**
  * `direct` — the provider allows browser (CORS) requests, so the key goes
@@ -67,6 +83,9 @@ export type ProviderRequest = {
 };
 
 export type Verdict = { success: boolean; message: string };
+
+/** One fact about a valid key, read from the provider's own response (e.g. account, scopes, credit). */
+export type KeyDetail = { label: string; value: string };
 
 export type ProviderMeta = {
   id: ProviderType;
@@ -86,7 +105,43 @@ export type ProviderMeta = {
   fallbackRequests?: (apiKey: string) => ProviderRequest[];
   /** Provider-specific interpretation; return undefined to use the default mapping. */
   interpret?: (status: number, body: string, apiKey: string) => Verdict | undefined;
+  /**
+   * Facts about a valid key taken from the successful response only (no extra
+   * requests). Never include email addresses or other personal data.
+   */
+  describe?: (body: unknown, headers: Headers | null, apiKey: string) => KeyDetail[];
 };
+
+// ── Helpers for describe() ─────────────────────────────────────────
+
+/** Reads a nested field; returns a short string for strings/numbers/booleans, else undefined. */
+function field(obj: unknown, path: string): string | undefined {
+  let cur: unknown = obj;
+  for (const part of path.split('.')) {
+    if (!cur || typeof cur !== 'object') return undefined;
+    cur = (cur as Record<string, unknown>)[part];
+  }
+  if (typeof cur === 'string') return cur.trim() ? cur.slice(0, 120) : undefined;
+  if (typeof cur === 'number' && Number.isFinite(cur)) return String(cur);
+  if (typeof cur === 'boolean') return cur ? 'yes' : 'no';
+  return undefined;
+}
+
+function details(...pairs: [string, string | undefined | null][]): KeyDetail[] {
+  return pairs
+    .filter((p): p is [string, string] => typeof p[1] === 'string' && p[1] !== '')
+    .map(([label, value]) => ({ label, value }));
+}
+
+/** "Models available" for OpenAI-style { data: [...] } or Gemini-style { models: [...] } lists. */
+function modelCount(body: unknown): KeyDetail[] {
+  if (!body || typeof body !== 'object') return [];
+  const b = body as Record<string, unknown>;
+  const list = Array.isArray(b.data) ? b.data : Array.isArray(b.models) ? b.models : null;
+  return list && list.length > 0 ? [{ label: 'Models available', value: String(list.length) }] : [];
+}
+
+const usd = (v: string | undefined) => (v !== undefined && !Number.isNaN(Number(v)) ? `$${Number(v).toFixed(2)}` : undefined);
 
 const bearer = (apiKey: string) => ({ Authorization: `Bearer ${apiKey}` });
 
@@ -101,6 +156,8 @@ export const PROVIDERS: ProviderMeta[] = [
     logoUrl: '/providers/openai.svg',
     transport: 'direct',
     request: (apiKey) => ({ url: 'https://api.openai.com/v1/models', headers: bearer(apiKey) }),
+    describe: (_body, _headers, apiKey) =>
+      details(['Key type', apiKey.startsWith('sk-proj-') ? 'Project key' : apiKey.startsWith('sk-svcacct-') ? 'Service account key' : undefined]),
   },
   {
     id: 'anthropic',
@@ -120,6 +177,8 @@ export const PROVIDERS: ProviderMeta[] = [
         'anthropic-dangerous-direct-browser-access': 'true',
       },
     }),
+    describe: (_body, _headers, apiKey) =>
+      details(['Key type', apiKey.startsWith('sk-ant-admin') ? 'Admin key' : apiKey.startsWith('sk-ant-api') ? 'API key' : undefined]),
   },
   {
     id: 'gemini',
@@ -169,6 +228,12 @@ export const PROVIDERS: ProviderMeta[] = [
     logoUrl: '/providers/huggingface.svg',
     transport: 'direct',
     request: (apiKey) => ({ url: 'https://huggingface.co/api/whoami-v2', headers: bearer(apiKey) }),
+    describe: (body) =>
+      details(
+        ['Account', field(body, 'name')],
+        ['Token name', field(body, 'auth.accessToken.displayName')],
+        ['Token role', field(body, 'auth.accessToken.role')],
+      ),
   },
   {
     id: 'groq',
@@ -192,6 +257,14 @@ export const PROVIDERS: ProviderMeta[] = [
     transport: 'direct',
     // /models is public; /key requires a valid key.
     request: (apiKey) => ({ url: 'https://openrouter.ai/api/v1/key', headers: bearer(apiKey) }),
+    describe: (body) =>
+      details(
+        ['Key label', field(body, 'data.label')],
+        ['Credit limit', field(body, 'data.limit') === undefined ? 'No limit' : usd(field(body, 'data.limit'))],
+        ['Credit remaining', usd(field(body, 'data.limit_remaining'))],
+        ['Used', usd(field(body, 'data.usage'))],
+        ['Free tier', field(body, 'data.is_free_tier')],
+      ),
   },
   {
     id: 'together',
@@ -308,6 +381,11 @@ export const PROVIDERS: ProviderMeta[] = [
       status === 403 && apiKey.startsWith('rk_')
         ? { success: true, message: 'Restricted key is valid (it lacks the Balance read permission used for this test)' }
         : undefined,
+    describe: (body, _headers, apiKey) =>
+      details(
+        ['Mode', /^(sk|rk)_live_/.test(apiKey) ? 'Live' : /^(sk|rk)_test_/.test(apiKey) ? 'Test' : field(body, 'livemode') === 'yes' ? 'Live' : undefined],
+        ['Key type', apiKey.startsWith('rk_') ? 'Restricted key' : apiKey.startsWith('sk_') ? 'Secret key' : undefined],
+      ),
   },
   {
     id: 'github',
@@ -326,6 +404,14 @@ export const PROVIDERS: ProviderMeta[] = [
         'X-GitHub-Api-Version': '2022-11-28',
       },
     }),
+    describe: (body, headers) => {
+      const scopes = headers?.get('x-oauth-scopes');
+      return details(
+        ['Account', field(body, 'login')],
+        ['Account type', field(body, 'type')],
+        ['Scopes', scopes === null || scopes === undefined ? undefined : scopes.trim() || 'none'],
+      );
+    },
   },
   {
     id: 'sendgrid',
@@ -337,6 +423,14 @@ export const PROVIDERS: ProviderMeta[] = [
     logoUrl: '/providers/sendgrid.png',
     transport: 'proxy',
     request: (apiKey) => ({ url: 'https://api.sendgrid.com/v3/scopes', headers: bearer(apiKey) }),
+    describe: (body) => {
+      const scopes = (body as { scopes?: unknown })?.scopes;
+      if (!Array.isArray(scopes)) return [];
+      return details(
+        ['Scopes', String(scopes.length)],
+        ['Can send mail', scopes.includes('mail.send') ? 'yes' : 'no'],
+      );
+    },
   },
 
   // ── AI inference ───────────────────────────────────────────────────
@@ -431,6 +525,7 @@ export const PROVIDERS: ProviderMeta[] = [
     logoUrl: '/providers/replicate.svg',
     transport: 'proxy',
     request: (apiKey) => ({ url: 'https://api.replicate.com/v1/account', headers: bearer(apiKey) }),
+    describe: (body) => details(['Account', field(body, 'username')], ['Account type', field(body, 'type')]),
   },
 
   // ── Voice & vector ────────────────────────────────────────────────
@@ -444,6 +539,14 @@ export const PROVIDERS: ProviderMeta[] = [
     logoUrl: '/providers/elevenlabs.svg',
     transport: 'direct',
     request: (apiKey) => ({ url: 'https://api.elevenlabs.io/v1/user', headers: { 'xi-api-key': apiKey } }),
+    describe: (body) => {
+      const used = field(body, 'subscription.character_count');
+      const limit = field(body, 'subscription.character_limit');
+      return details(
+        ['Plan', field(body, 'subscription.tier')],
+        ['Characters used', used && limit ? `${Number(used).toLocaleString('en-US')} / ${Number(limit).toLocaleString('en-US')}` : undefined],
+      );
+    },
   },
   {
     id: 'assemblyai',
@@ -467,6 +570,10 @@ export const PROVIDERS: ProviderMeta[] = [
     logoUrl: '/providers/deepgram.svg',
     transport: 'proxy',
     request: (apiKey) => ({ url: 'https://api.deepgram.com/v1/projects', headers: { Authorization: `Token ${apiKey}` } }),
+    describe: (body) => {
+      const projects = (body as { projects?: unknown })?.projects;
+      return Array.isArray(projects) ? details(['Projects', String(projects.length)]) : [];
+    },
   },
   {
     id: 'pinecone',
@@ -478,6 +585,10 @@ export const PROVIDERS: ProviderMeta[] = [
     logoUrl: '/providers/pinecone.png',
     transport: 'direct',
     request: (apiKey) => ({ url: 'https://api.pinecone.io/indexes', headers: { 'Api-Key': apiKey } }),
+    describe: (body) => {
+      const indexes = (body as { indexes?: unknown })?.indexes;
+      return Array.isArray(indexes) ? details(['Indexes', String(indexes.length)]) : [];
+    },
   },
 
   // ── Email & messaging ─────────────────────────────────────────────
@@ -506,6 +617,11 @@ export const PROVIDERS: ProviderMeta[] = [
     logoUrl: '/providers/brevo.svg',
     transport: 'direct',
     request: (apiKey) => ({ url: 'https://api.brevo.com/v3/account', headers: { 'api-key': apiKey } }),
+    describe: (body) => {
+      const plans = (body as { plan?: unknown })?.plan;
+      const first = Array.isArray(plans) ? plans[0] : undefined;
+      return details(['Company', field(body, 'companyName')], ['Plan', field(first, 'type')]);
+    },
   },
   {
     id: 'postmark',
@@ -527,6 +643,7 @@ export const PROVIDERS: ProviderMeta[] = [
         headers: { 'X-Postmark-Account-Token': apiKey, Accept: 'application/json' },
       },
     ],
+    describe: (body) => details(['Server', field(body, 'Name')]),
   },
   {
     id: 'resend',
@@ -567,6 +684,11 @@ export const PROVIDERS: ProviderMeta[] = [
       status === 401 && !apiKey.includes(':')
         ? { success: false, message: 'Twilio needs both parts — enter it as AccountSID:AuthToken (or ApiKeySID:ApiKeySecret)' }
         : undefined,
+    describe: (body) => {
+      const accounts = (body as { accounts?: unknown })?.accounts;
+      const first = Array.isArray(accounts) ? accounts[0] : undefined;
+      return details(['Account', field(first, 'friendly_name')], ['Account type', field(first, 'type')], ['Status', field(first, 'status')]);
+    },
   },
   {
     id: 'slack',
@@ -590,6 +712,10 @@ export const PROVIDERS: ProviderMeta[] = [
         return undefined;
       }
     },
+    describe: (body) =>
+      field(body, 'ok') === 'yes'
+        ? details(['Workspace', field(body, 'team')], ['User', field(body, 'user')], ['Bot', field(body, 'bot_id') ? 'yes' : 'no'])
+        : [],
   },
 
   // ── Developer platforms ───────────────────────────────────────────
@@ -606,6 +732,7 @@ export const PROVIDERS: ProviderMeta[] = [
       url: 'https://api.notion.com/v1/users/me',
       headers: { ...bearer(apiKey), 'Notion-Version': '2022-06-28' },
     }),
+    describe: (body) => details(['Integration', field(body, 'name')], ['Workspace', field(body, 'bot.workspace_name')]),
   },
   {
     id: 'gitlab',
@@ -618,6 +745,7 @@ export const PROVIDERS: ProviderMeta[] = [
     transport: 'direct',
     // gitlab.com only — self-managed instances use their own host.
     request: (apiKey) => ({ url: 'https://gitlab.com/api/v4/user', headers: { 'PRIVATE-TOKEN': apiKey } }),
+    describe: (body) => details(['Account', field(body, 'username')], ['Bot account', field(body, 'bot')]),
   },
   {
     id: 'vercel',
@@ -632,6 +760,7 @@ export const PROVIDERS: ProviderMeta[] = [
     // Vercel answers 403 {"invalidToken": true} for bad tokens.
     interpret: (status, body) =>
       status === 403 && body.includes('invalidToken') ? { success: false, message: 'Invalid or expired token (403)' } : undefined,
+    describe: (body) => details(['Account', field(body, 'user.username')]),
   },
   {
     id: 'netlify',
@@ -643,6 +772,7 @@ export const PROVIDERS: ProviderMeta[] = [
     logoUrl: '/providers/netlify.svg',
     transport: 'direct',
     request: (apiKey) => ({ url: 'https://api.netlify.com/api/v1/user', headers: bearer(apiKey) }),
+    describe: (body) => details(['Account', field(body, 'slug')], ['Name', field(body, 'full_name')]),
   },
   {
     id: 'digitalocean',
@@ -654,6 +784,8 @@ export const PROVIDERS: ProviderMeta[] = [
     logoUrl: '/providers/digitalocean.svg',
     transport: 'direct',
     request: (apiKey) => ({ url: 'https://api.digitalocean.com/v2/account', headers: bearer(apiKey) }),
+    describe: (body) =>
+      details(['Account status', field(body, 'account.status')], ['Droplet limit', field(body, 'account.droplet_limit')], ['Team', field(body, 'account.team.name')]),
   },
   {
     id: 'cloudflare',
@@ -678,6 +810,278 @@ export const PROVIDERS: ProviderMeta[] = [
         return undefined;
       }
     },
+    describe: (body) =>
+      details(['Token status', field(body, 'result.status')], ['Expires', field(body, 'result.expires_on')?.slice(0, 10)]),
+  },
+  // ── Developer & business tools (verified against each provider's API docs, 2026-11) ──
+  {
+    // https://docs.discord.com/developers/resources/user (GET /users/@me, "Bot <token>")
+    id: 'discord',
+    name: 'Discord (bot)',
+    color: 'bg-indigo-500',
+    detectPattern: null,
+    order: 170,
+    detectPriority: 999,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({
+      url: 'https://discord.com/api/v10/users/@me',
+      // Discord requires a descriptive User-Agent for bot requests.
+      headers: { Authorization: `Bot ${apiKey}`, 'User-Agent': 'DiscordBot (https://apikeychain.app, 1.0)' },
+    }),
+    describe: (body) => details(['Bot', field(body, 'username')], ['Is bot', field(body, 'bot')]),
+  },
+  {
+    // https://core.telegram.org/bots/api#getme
+    id: 'telegram',
+    name: 'Telegram (bot)',
+    color: 'bg-sky-500',
+    detectPattern: /^\d{6,12}:[A-Za-z0-9_-]{30,}$/,
+    order: 171,
+    detectPriority: 60,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({ url: `https://api.telegram.org/bot${encodeURIComponent(apiKey)}/getMe` }),
+    interpret: (status, body) => {
+      // A wrong token returns 401, a malformed one 404 (the token is part of the path).
+      if (status === 401 || status === 404) return { success: false, message: 'Invalid bot token' };
+      if (status !== 200) return undefined;
+      try {
+        return (JSON.parse(body) as { ok?: boolean }).ok ? { success: true, message: 'Bot token is valid' } : { success: false, message: 'Invalid bot token' };
+      } catch {
+        return undefined;
+      }
+    },
+    describe: (body) => details(['Bot', field(body, 'result.username') ? `@${field(body, 'result.username')}` : undefined], ['Name', field(body, 'result.first_name')]),
+  },
+  {
+    // https://developers.hubspot.com/docs/api-reference/account-account-info-v3/details/get-account-info-v3-details
+    id: 'hubspot',
+    name: 'HubSpot',
+    color: 'bg-orange-500',
+    detectPattern: null,
+    order: 172,
+    detectPriority: 999,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({ url: 'https://api.hubapi.com/account-info/v3/details', headers: bearer(apiKey) }),
+    describe: (body) => details(['Portal ID', field(body, 'portalId')], ['Account type', field(body, 'accountType')], ['Data hosting', field(body, 'dataHostingLocation')]),
+  },
+  {
+    // https://mailchimp.com/developer/marketing/guides/quick-start/ (GET /3.0/ping; the -usN suffix is the data center)
+    id: 'mailchimp',
+    name: 'Mailchimp',
+    color: 'bg-yellow-500',
+    detectPattern: /^[0-9a-f]{32}-us\d{1,2}$/,
+    order: 173,
+    detectPriority: 61,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => {
+      const dc = /-(us\d{1,2})$/.exec(apiKey)?.[1] ?? 'us1';
+      return { url: `https://${dc}.api.mailchimp.com/3.0/ping`, headers: bearer(apiKey) };
+    },
+  },
+  {
+    // https://airtable.com/developers/web/api/get-user-id-scopes
+    id: 'airtable',
+    name: 'Airtable',
+    color: 'bg-blue-500',
+    detectPattern: null,
+    order: 174,
+    detectPriority: 999,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({ url: 'https://api.airtable.com/v0/meta/whoami', headers: bearer(apiKey) }),
+  },
+  {
+    // https://linear.app/developers/graphql (personal keys: "Authorization: <key>", no Bearer)
+    id: 'linear',
+    name: 'Linear',
+    color: 'bg-violet-600',
+    detectPattern: null,
+    order: 175,
+    detectPriority: 999,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({
+      url: 'https://api.linear.app/graphql',
+      method: 'POST',
+      headers: { Authorization: apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: '{ viewer { name } }' }),
+    }),
+    interpret: (status, body) => {
+      if (status !== 200) return undefined;
+      try {
+        const parsed = JSON.parse(body) as { data?: { viewer?: unknown }; errors?: { message?: string }[] };
+        return parsed.data?.viewer ? { success: true, message: 'API key is valid' } : { success: false, message: parsed.errors?.[0]?.message ?? 'Invalid API key' };
+      } catch {
+        return undefined;
+      }
+    },
+    describe: (body) => details(['User', field(body, 'data.viewer.name')]),
+  },
+  {
+    // https://devcenter.heroku.com/articles/platform-api-reference#account-info
+    id: 'heroku',
+    name: 'Heroku',
+    color: 'bg-purple-700',
+    detectPattern: null,
+    order: 176,
+    detectPriority: 999,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({ url: 'https://api.heroku.com/account', headers: { ...bearer(apiKey), Accept: 'application/vnd.heroku+json; version=3' } }),
+    describe: (body) => details(['Name', field(body, 'name')], ['Default team', field(body, 'default_team.name')]),
+  },
+  {
+    // https://docs.sentry.io/api/users/retrieve-the-current-credentials/ (sentry.io only, not self-hosted)
+    id: 'sentry',
+    name: 'Sentry',
+    color: 'bg-purple-900',
+    detectPattern: null,
+    order: 177,
+    detectPriority: 999,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({ url: 'https://sentry.io/api/0/', headers: bearer(apiKey) }),
+    interpret: (status, body) => {
+      if (status !== 200) return undefined;
+      // An unauthenticated call also returns 200, with no "auth" object.
+      try {
+        return (JSON.parse(body) as { auth?: unknown }).auth ? { success: true, message: 'Auth token is valid' } : { success: false, message: 'Invalid auth token' };
+      } catch {
+        return undefined;
+      }
+    },
+    describe: (body) => {
+      const scopes = (body as { auth?: { scopes?: unknown } })?.auth?.scopes;
+      return details(['Scopes', Array.isArray(scopes) ? scopes.join(', ').slice(0, 120) : undefined], ['User', field(body, 'user.username')]);
+    },
+  },
+  {
+    // https://docs.mapbox.com/api/accounts/tokens/#retrieve-a-token (200 for any token: check "code")
+    id: 'mapbox',
+    name: 'Mapbox',
+    color: 'bg-slate-700',
+    detectPattern: /^(pk|sk|tk)\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/,
+    order: 178,
+    detectPriority: 62,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({ url: `https://api.mapbox.com/tokens/v2?access_token=${encodeURIComponent(apiKey)}` }),
+    interpret: (status, body) => {
+      if (status !== 200) return undefined;
+      try {
+        const code = (JSON.parse(body) as { code?: string }).code;
+        return code === 'TokenValid' ? { success: true, message: 'Access token is valid' } : { success: false, message: `Token not valid (${code ?? 'unknown'})` };
+      } catch {
+        return undefined;
+      }
+    },
+    describe: (body, _headers, apiKey) =>
+      details(['Token type', apiKey.startsWith('sk.') ? 'Secret' : apiKey.startsWith('pk.') ? 'Public' : apiKey.startsWith('tk.') ? 'Temporary' : undefined], ['Account', field(body, 'token.user')]),
+  },
+  {
+    // https://developers.asana.com/reference/getuser (users/me)
+    id: 'asana',
+    name: 'Asana',
+    color: 'bg-rose-500',
+    detectPattern: null,
+    order: 179,
+    detectPriority: 999,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({ url: 'https://app.asana.com/api/1.0/users/me', headers: bearer(apiKey) }),
+    describe: (body) => details(['User', field(body, 'data.name')]),
+  },
+  {
+    // https://developer.squareup.com/reference/square/merchants-api/retrieve-merchant
+    id: 'square',
+    name: 'Square',
+    color: 'bg-gray-800',
+    detectPattern: null,
+    order: 180,
+    detectPriority: 999,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({ url: 'https://connect.squareup.com/v2/merchants/me', headers: bearer(apiKey) }),
+    // Sandbox tokens only work on the sandbox host.
+    fallbackRequests: (apiKey) => [{ url: 'https://connect.squareupsandbox.com/v2/merchants/me', headers: bearer(apiKey) }],
+    describe: (body) => details(['Business', field(body, 'merchant.business_name')], ['Country', field(body, 'merchant.country')]),
+  },
+  {
+    // https://docs.datadoghq.com/api/latest/authentication/ (GET /api/v1/validate; one host per Datadog site)
+    id: 'datadog',
+    name: 'Datadog',
+    color: 'bg-purple-600',
+    detectPattern: null,
+    order: 181,
+    detectPriority: 999,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({ url: 'https://api.datadoghq.com/api/v1/validate', headers: { 'DD-API-KEY': apiKey } }),
+    // Datadog answers 403 for an unknown key (on every site).
+    interpret: (status) => (status === 403 ? { success: false, message: 'Invalid API key (not valid on any Datadog site)' } : undefined),
+    fallbackRequests: (apiKey) =>
+      ['api.datadoghq.eu', 'api.us3.datadoghq.com', 'api.us5.datadoghq.com', 'api.ap1.datadoghq.com'].map((host) => ({
+        url: `https://${host}/api/v1/validate`,
+        headers: { 'DD-API-KEY': apiKey },
+      })),
+  },
+  {
+    // https://learning.postman.com/docs/developer/postman-api/authentication/
+    id: 'postman',
+    name: 'Postman',
+    color: 'bg-orange-600',
+    detectPattern: null,
+    order: 182,
+    detectPriority: 999,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({ url: 'https://api.getpostman.com/me', headers: { 'X-API-Key': apiKey } }),
+    describe: (body) => details(['User', field(body, 'user.username')]),
+  },
+  {
+    // https://api-docs.render.com/reference/list-owners
+    id: 'render',
+    name: 'Render',
+    color: 'bg-gray-900',
+    detectPattern: null,
+    order: 183,
+    detectPriority: 999,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({ url: 'https://api.render.com/v1/owners?limit=20', headers: { ...bearer(apiKey), Accept: 'application/json' } }),
+    describe: (body) => {
+      const first = Array.isArray(body) ? (body[0] as { owner?: unknown })?.owner : undefined;
+      return details(['Owner', field(first, 'name')], ['Owner type', field(first, 'type')]);
+    },
+  },
+  {
+    // https://neon.com/docs/reference/api/users/get-current-user-info
+    id: 'neon',
+    name: 'Neon',
+    color: 'bg-emerald-500',
+    detectPattern: null,
+    order: 184,
+    detectPriority: 999,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({ url: 'https://console.neon.tech/api/v2/users/me', headers: { ...bearer(apiKey), Accept: 'application/json' } }),
+  },
+  {
+    // https://docs.lemonsqueezy.com/api/users/retrieve-user
+    id: 'lemonsqueezy',
+    name: 'Lemon Squeezy',
+    color: 'bg-yellow-400',
+    detectPattern: null,
+    order: 185,
+    detectPriority: 999,
+    logoUrl: '',
+    transport: 'proxy',
+    request: (apiKey) => ({ url: 'https://api.lemonsqueezy.com/v1/users/me', headers: { ...bearer(apiKey), Accept: 'application/vnd.api+json' } }),
+    describe: (body) => details(['User', field(body, 'data.attributes.name')], ['Test mode', field(body, 'meta.test_mode')]),
   },
 ];
 
@@ -712,6 +1116,8 @@ export type ProviderTestResult = {
   latency?: number;
   endpoint: string;
   responseBody?: string;
+  /** Facts about a valid key (account, scopes, credit…), when the provider's response includes them. */
+  details?: KeyDetail[];
 };
 
 export type ProviderFetch = (request: ProviderRequest) => Promise<Response>;
@@ -781,6 +1187,23 @@ export function classifyResponse(
   return { success: false, message: `API error: ${status} ${statusText}${detail ? ' - ' + detail : ''}`.trim() };
 }
 
+/** Provider facts, or a model count for model-list endpoints. Never throws. */
+export function describeKey(meta: ProviderMeta, rawBody: string, headers: Headers | null, apiKey: string): KeyDetail[] {
+  let body: unknown = null;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    // not JSON
+  }
+  try {
+    const own = meta.describe ? meta.describe(body, headers, apiKey) : [];
+    const models = meta.request('').url.endsWith('/models') ? modelCount(body) : [];
+    return [...own, ...models].slice(0, 6);
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Run a provider test with the given fetch implementation. Network errors
  * propagate so callers can decide whether to fall back to the relay.
@@ -806,6 +1229,10 @@ export async function runProviderTest(
       endpoint: request.url,
       responseBody: rawBody.slice(0, MAX_BODY_CHARS),
     };
+    if (verdict.success && response.status >= 200 && response.status < 300) {
+      const found = describeKey(meta, rawBody, response.headers, apiKey);
+      if (found.length > 0) result.details = found;
+    }
     if (response.status !== 401 && response.status !== 403) break;
   }
 
