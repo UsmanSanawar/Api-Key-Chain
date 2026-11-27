@@ -3,21 +3,27 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/npm/v/api-key-chain?color=yellow" alt="npm version">
+  <img src="https://img.shields.io/github/v/release/UsmanSanawar/Api-Key-Chain?color=yellow" alt="latest release">
   <img src="https://img.shields.io/github/license/UsmanSanawar/Api-Key-Chain?color=yellow" alt="license">
   <img src="https://img.shields.io/github/stars/UsmanSanawar/Api-Key-Chain?style=social" alt="stars">
   <img src="https://img.shields.io/badge/PRs-welcome-brightgreen" alt="PRs welcome">
 </p>
 
 <p align="center">
-  <strong>Instantly validate API keys for 43 providers — straight from your browser.</strong><br>
+  <strong>Instantly validate API keys for 59 providers — in your browser, your terminal or your CI.</strong><br>
   Open source. Keys never stored. Free.
 </p>
 
 <p align="center">
-  <a href="https://apikeychain.app"><strong>🌐 Live Demo →</strong></a>
+  <a href="https://apikeychain.app"><strong>🌐 Web app →</strong></a>
   &nbsp;|&nbsp;
-  <a href="https://apikeychain.app/pricing"><strong>☁️ Upgrade to Cloud →</strong></a>
+  <a href="#-command-line--ci"><strong>💻 CLI & GitHub Action →</strong></a>
+  &nbsp;|&nbsp;
+  <a href="https://apikeychain.app/pricing"><strong>☁️ Cloud: alerts & sharing →</strong></a>
+</p>
+
+<p align="center">
+  <code>uses: UsmanSanawar/Api-Key-Chain@v1</code>
 </p>
 
 <p align="center">
@@ -31,11 +37,13 @@
 
 | | |
 |---|---|
-| 🌐 **43 Providers** | **LLMs:** OpenAI, Anthropic, Gemini, DeepSeek, xAI, Mistral, Cohere, Perplexity, GLM, Kimi, Qwen, Doubao · **Inference:** Groq, OpenRouter, Together, Hugging Face, Fireworks, Cerebras, Nebius, DeepInfra, Hyperbolic, Novita, AI21, Replicate · **Audio/vector:** ElevenLabs, AssemblyAI, Deepgram, Pinecone · **Email/messaging:** SendGrid, Mailgun, Brevo, Postmark, Resend, Twilio, Slack · **Payments & dev:** Stripe, GitHub, GitLab, Vercel, Netlify, DigitalOcean, Cloudflare, Notion |
+| 🌐 **59 Providers** | **LLMs:** OpenAI, Anthropic, Gemini, DeepSeek, xAI, Mistral, Cohere, Perplexity, GLM, Kimi, Qwen, Doubao · **Inference:** Groq, OpenRouter, Together, Hugging Face, Fireworks, Cerebras, Nebius, DeepInfra, Hyperbolic, Novita, AI21, Replicate · **Audio/vector:** ElevenLabs, AssemblyAI, Deepgram, Pinecone · **Email/messaging:** SendGrid, Mailgun, Brevo, Postmark, Resend, Twilio, Slack · **Payments & dev:** Stripe, GitHub, GitLab, Vercel, Netlify, DigitalOcean, Cloudflare, Notion · **Dev & business tools:** Discord, Telegram, HubSpot, Mailchimp, Airtable, Linear, Heroku, Sentry, Mapbox, Asana, Square, Datadog, Postman, Render, Neon, Lemon Squeezy |
 | 🔍 **Auto-Detect** | Smart pattern matching identifies your provider — paste a key, we figure out which one |
 | ⚡ **Instant Validation** | Real API calls with status codes, latency (ms), and full response body |
 | 📦 **Bulk Testing** | Paste multiple keys (comma or newline separated) — auto-switches to bulk mode, with a result per key |
 | 📄 **.env Checker** | Paste a whole `.env` file — every value recognised as an API key (by prefix or by variable name, e.g. `MISTRAL_API_KEY`) is tested; URLs, passwords and other values are ignored and never sent |
+| 🪪 **Key Details** | A valid result also shows who the key belongs to and what it can do (account, scopes, live/test mode…) where the provider returns it |
+| 💻 **CLI & GitHub Action** | Check the keys in a `.env` file or your CI secrets and fail the build when one stops working — [see below](#-command-line--ci) |
 | 🔗 **Endpoint Viewer** | Toggle to see the exact API URL being tested |
 | 📋 **Response Viewer** | Pretty-printed JSON response with copy-to-clipboard and expand/collapse |
 | 📊 **Test History** | Timestamped results persist in localStorage across refreshes |
@@ -52,7 +60,10 @@
 The OSS version is fully functional. The [cloud version](https://apikeychain.app) adds:
 
 - 🔒 **Encrypted Key Vault** — Store keys with Zero-Knowledge (PBKDF2 + AES-256-GCM) or Server-Encrypted (Envelope Encryption via Supabase Vault)
-- 🩺 **Background Health Checks** — Auto-validate saved keys on schedule
+- 🔔 **Health Checks & Email Alerts** — Saved keys are re-checked on a schedule; get an email when one stops working and when it works again (1 key free)
+- ⏰ **Expiry Reminders** — Emails 30, 7 and 1 day before a key expires
+- 👥 **Shared Folders** — Share keys with up to 5 teammates as Viewer, Member or Editor; revoke anytime
+- ⬇️ **.env Export** — Download your saved keys as a `.env` file
 - 📊 **Cloud History & Analytics** — Cross-device synced test history
 - 💳 **Premium Plan** — $4.99/month
 
