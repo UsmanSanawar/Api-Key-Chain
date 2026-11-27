@@ -98,9 +98,12 @@ npm run dev
 Check every API key in a `.env` file (or in environment variables) from your terminal or CI, and fail the build when one has stopped working. It uses the same provider list as the website, calls each provider directly (nothing goes anywhere else), and never prints full keys.
 
 ```bash
+npx apikeychain .env
+npx apikeychain --env --only OPENAI_API_KEY,STRIPE_SECRET_KEY
+
+# or from a clone of this repo
 npm run build:cli            # bundles bin/apikeychain.mjs (no dependencies)
 node bin/apikeychain.mjs .env
-node bin/apikeychain.mjs --env --only OPENAI_API_KEY,STRIPE_SECRET_KEY
 ```
 
 | Option | Meaning |
@@ -118,7 +121,7 @@ Exit codes: `0` all valid · `1` a key is invalid · `2` usage or file error.
 
 ```yaml
 - uses: actions/checkout@v4
-- uses: UsmanSanawar/Api-Key-Chain@main
+- uses: UsmanSanawar/Api-Key-Chain@v1
   with:
     env-names: OPENAI_API_KEY,STRIPE_SECRET_KEY
   env:

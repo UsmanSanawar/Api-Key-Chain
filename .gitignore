@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# CLI package build output (copied from bin/ by npm run pack:cli)
+packages/cli/apikeychain.mjs
